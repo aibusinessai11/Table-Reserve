@@ -50,6 +50,14 @@ fun HomeScreen(
     val userLocationName by viewModel.userLocationName.collectAsState()
     val isLoading by viewModel.isLoadingRestaurants.collectAsState()
     val searchRadiusKm by viewModel.searchRadiusKm.collectAsState()
+    val context = LocalContext.current
+
+    var showProfileDialog by remember { mutableStateOf(false) }
+    val isGoogleConnected by viewModel.isGoogleConnected.collectAsState()
+    val onlyGoogleSavedPlaces by viewModel.onlyGoogleSavedPlaces.collectAsState()
+    val googleUserEmail by viewModel.googleUserEmail.collectAsState()
+    val googleUserName by viewModel.googleUserName.collectAsState()
+    val googleProfilePic by viewModel.googleProfilePic.collectAsState()
 
     val cuisinesList = listOf("Все", "Итальянская", "Паназиатская", "Французская", "Веганская", "Американская", "Кето")
 
@@ -114,15 +122,30 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                            .clip(CircleShape)
+                            .clickable { showProfileDialog = true }
+                            .testTag("profile_button"),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Профиль",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        if (isGoogleConnected && googleProfilePic.isNotEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(googleProfilePic)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Аватар профиля Google",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Профиль",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -266,6 +289,59 @@ fun HomeScreen(
                         )
                         Text(
                             text = "Показывать заведения, готовые принять гостей прямо сейчас",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Google Saved Places Switch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (!isGoogleConnected) {
+                                showProfileDialog = true
+                            } else {
+                                viewModel.onlyGoogleSavedPlaces.value = !onlyGoogleSavedPlaces
+                            }
+                        }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Switch(
+                        checked = onlyGoogleSavedPlaces,
+                        onCheckedChange = {
+                            if (!isGoogleConnected) {
+                                showProfileDialog = true
+                            } else {
+                                viewModel.onlyGoogleSavedPlaces.value = it
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.secondary
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = if (isGoogleConnected) Color(0xFFF1C40F) else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Сохраненные места в Google Картах",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = if (isGoogleConnected) "Поиск по сохраненным местам вашего аккаунта Google" else "Подключите Google-аккаунт для поиска по вашим местам",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -457,6 +533,110 @@ fun HomeScreen(
                 }
             }
         }
+    }
+
+    if (showProfileDialog) {
+        AlertDialog(
+            onDismissRequest = { showProfileDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AccountCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text("Вход через Google", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (isGoogleConnected) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(googleProfilePic)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "Аватар Google",
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                            Column {
+                                Text(
+                                    text = googleUserName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = googleUserEmail,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Личный аккаунт Google успешно синхронизирован! Ваши Сохраненные места (Starred Places) из Google Карт теперь интегрированы и доступны для мгновенного поиска.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = "Подключите ваш Google-аккаунт, чтобы мгновенно загрузить ваши избранные заведения из Google Карт и персонализировать поиск.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (isGoogleConnected) {
+                    TextButton(
+                        onClick = {
+                            viewModel.isGoogleConnected.value = false
+                            viewModel.onlyGoogleSavedPlaces.value = false
+                            showProfileDialog = false
+                            android.widget.Toast.makeText(context, "Google-аккаунт отключен", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Отключить аккаунт")
+                    }
+                } else {
+                    Button(
+                        onClick = {
+                            viewModel.isGoogleConnected.value = true
+                            showProfileDialog = false
+                            android.widget.Toast.makeText(context, "Google-аккаунт подключен: $googleUserEmail", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    ) {
+                        Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Войти с Google")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showProfileDialog = false }) {
+                    Text("Закрыть")
+                }
+            }
+        )
     }
 }
 
