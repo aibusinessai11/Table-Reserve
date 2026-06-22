@@ -1,107 +1,94 @@
 <!doctype html>
-<html lang="ru" style="height: 100%; margin: 0;">
+<html lang="ru" class="h-full">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Table Reserve — Премиум Бронирование Столов</title>
+    <!-- Tailwind CSS v4 CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
-      body { margin: 0; background-color: #FEF7FF; color: #1D1B20; font-family: system-ui, -apple-system, sans-serif; }
-      .no-scrollbar::-webkit-scrollbar { display: none; }
-      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      /* Smooth transitions */
+      .page-transition {
+        transition: all 0.2s ease-in-out;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
     </style>
   </head>
-  <body class="min-h-screen flex flex-col justify-between">
-    
-    <!-- Header Banner -->
-    <header class="max-w-6xl mx-auto w-full px-6 py-6 flex justify-between items-center border-b border-[#CAC4D0]">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-[#EADDFF] rounded-full flex items-center justify-center">
-          <span class="material-symbols-outlined text-[#21005D] text-2xl">restaurant</span>
-        </div>
-        <div class="flex flex-col">
-          <span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Приложение</span>
-          <span class="text-lg font-bold tracking-tight text-[#21005D]">Table Reserve</span>
-        </div>
-      </div>
-      <div>
-        <a href="#about" class="text-sm font-semibold text-[#6750A4] hover:underline px-4 py-2">Подробнее</a>
-        <a href="#how-to-run" class="bg-[#6750A4] text-white px-5 py-2.5 rounded-full text-xs font-bold tracking-wider hover:bg-[#5b4693] transition-colors shadow-sm ml-2">ЗАПУСТИТЬ</a>
-      </div>
-    </header>
+  <body class="bg-[#FEF7FF] text-[#1D1B20] font-sans h-full flex flex-col justify-between overflow-hidden">
 
-    <!-- Main Content Area representing geometric preview -->
-    <main class="max-w-6xl mx-auto w-full px-6 py-12 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+    <!-- Toast message notification -->
+    <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#21005D] text-[#EADDFF] px-6 py-3 rounded-full shadow-lg text-sm font-semibold tracking-wide flex items-center gap-2 transform translate-y-[-100px] opacity-0 transition-all duration-300 pointer-events-none">
+      <span class="material-symbols-outlined text-sm" id="toast-icon">check_circle</span>
+      <span id="toast-message">Успешно!</span>
+    </div>
+
+    <!-- Main Container -->
+    <div class="flex flex-col md:flex-row h-full w-full overflow-hidden">
       
-      <!-- App intro textual detail (Left Sidebar) -->
-      <section class="lg:col-span-6 flex flex-col gap-6" id="about">
-        <div class="inline-flex items-center gap-2 bg-[#EADDFF] text-[#21005D] px-4 py-1.5 rounded-full text-xs font-semibold w-max">
-          <span class="material-symbols-outlined text-sm">stars</span> Geometric Balance Theme
-        </div>
-        <h1 class="text-4xl lg:text-5xl font-extrabold tracking-tight text-[#1D1B20] leading-tight">
-          Онлайн-Бронирование Столиков с Лояльностью
-        </h1>
-        <p class="text-md text-[#49454F] leading-relaxed">
-          Добро пожаловать в презентацию мобильного приложения <strong>Table Reserve (Столики Онлайн)</strong>. 
-          Данный проект разработан полностью на <strong>Kotlin & Jetpack Compose</strong> с использованием локальной базы данных 
-          Room, умных маршрутов и кэшбэк-системы лояльности.
-        </p>
+      <!-- Left sidebar with details about the app (Hidden on small mobile views to prioritize immediate run) -->
+      <aside class="hidden md:flex md:w-1/3 lg:w-1/4 bg-[#F3EDF7] border-r border-[#CAC4D0] p-6 flex-col justify-between overflow-y-auto">
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-[#EADDFF] rounded-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-[#21005D] text-2xl">restaurant</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Приложение</span>
+              <span class="text-lg font-bold tracking-tight text-[#21005D]">Table Reserve</span>
+            </div>
+          </div>
 
-        <!-- Dynamic feature blocks -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-          <div class="bg-[#F3EDF7] p-4 rounded-2xl border border-[#D0BCFF] flex gap-3">
-            <span class="material-symbols-outlined text-[#6750A4] text-2xl">explore</span>
-            <div>
-              <h4 class="font-bold text-sm">Поиск Поблизости</h4>
-              <p class="text-xs text-[#49454F]">Интерактивная карта, подбор и фильтрация лучших заведений.</p>
-            </div>
+          <div class="bg-white p-4 rounded-2xl border border-[#D0BCFF]">
+            <h3 class="font-bold text-sm text-[#21005D] mb-1 flex items-center gap-2">
+              <span class="material-symbols-outlined text-lg">hotel_class</span> Geometric Balance
+            </h3>
+            <p class="text-xs text-[#49454F] leading-relaxed">
+              Дизайн-система основана на гармоничном балансе геометрических форм, точечных решеток и премиальной палитры Material Theme 3.
+            </p>
           </div>
-          <div class="bg-[#F3EDF7] p-4 rounded-2xl border border-[#D0BCFF] flex gap-3">
-            <span class="material-symbols-outlined text-[#6750A4] text-2xl">calendar_today</span>
-            <div>
-              <h4 class="font-bold text-sm">Быстрое Бронирование</h4>
-              <p class="text-xs text-[#49454F]">Выбор даты, времени и стола с мгновенным подтверждением.</p>
+
+          <div class="flex flex-col gap-2">
+            <span class="text-[10px] text-[#49454F] uppercase font-bold tracking-wider">Функционал веб-версии:</span>
+            <div class="flex items-center gap-2 text-xs text-[#1D1B20]">
+              <span class="material-symbols-outlined text-sm text-[#6750A4]">check</span> Полноценное создание брони
             </div>
-          </div>
-          <div class="bg-[#F3EDF7] p-4 rounded-2xl border border-[#D0BCFF] flex gap-3">
-            <span class="material-symbols-outlined text-[#6750A4] text-2xl">toll</span>
-            <div>
-              <h4 class="font-bold text-sm">Клуб Лояльности</h4>
-              <p class="text-xs text-[#49454F]">Накапливайте бонусы за визиты и меняйте их на призы.</p>
+            <div class="flex items-center gap-2 text-xs text-[#1D1B20]">
+              <span class="material-symbols-outlined text-sm text-[#6750A4]">check</span> Начисление баллов (+50)
             </div>
-          </div>
-          <div class="bg-[#F3EDF7] p-4 rounded-2xl border border-[#D0BCFF] flex gap-3">
-            <span class="material-symbols-outlined text-[#6750A4] text-2xl">directions_walk</span>
-            <div>
-              <h4 class="font-bold text-sm">Построение Пути</h4>
-              <p class="text-xs text-[#49454F]">Инструкции для пешеходов и водителей до ресторана.</p>
+            <div class="flex items-center gap-2 text-xs text-[#1D1B20]">
+              <span class="material-symbols-outlined text-sm text-[#6750A4]">check</span> Списание наград в магазине
+            </div>
+            <div class="flex items-center gap-2 text-xs text-[#1D1B20]">
+              <span class="material-symbols-outlined text-sm text-[#6750A4]">check</span> Управление и отмена броней
             </div>
           </div>
         </div>
 
-        <div class="bg-[#21005D]/5 p-4 rounded-2xl border border-[#CAC4D0] mt-4">
-          <h3 class="font-bold text-md text-[#21005D] flex items-center gap-2 mb-2">
-            <span class="material-symbols-outlined">info</span> Где запустить приложение?
-          </h3>
-          <p class="text-xs text-[#49454F] leading-relaxed">
-            Поскольку это <strong>нативное мобильное Android приложение</strong>, оно не может функционировать прямо на сервере Vercel в виде веб-сайта. Мы подготовили этот красивый лендинг, чтобы ваш деплой на Vercel выглядел великолепно и профессионально! Запустить саму программу можно прямо в удобном стриминг-эмуляторе в панели <strong>Google AI Studio</strong> или собрав APK.
-          </p>
+        <div class="pt-6 border-t border-[#CAC4D0] text-center">
+          <p class="text-[10px] text-[#49454F]">&copy; 2026 Table Reserve. Все права защищены.</p>
         </div>
-      </section>
+      </aside>
 
-      <!-- Interactive Mock Device Screen (Right Area) -->
-      <section class="lg:col-span-6 flex justify-center py-6">
-        <div class="w-[330px] h-[640px] bg-[#FEF7FF] rounded-[40px] shadow-2xl border-[10px] border-[#1D1B20] overflow-hidden flex flex-col justify-between relative">
+      <!-- Central Full-Height Interactive App Area -->
+      <main class="flex-1 h-full bg-[#FEF7FF] flex items-center justify-center p-0 sm:p-4">
+        <!-- Interactive Mock Device Wrapper (Matches the Android App Layout 100%) -->
+        <div class="w-full h-full sm:max-w-[420px] sm:h-[90vh] sm:rounded-[40px] sm:shadow-2xl sm:border-[8px] sm:border-[#1D1B20] bg-[#FEF7FF] overflow-hidden flex flex-col justify-between relative">
           
-          <!-- Inner App Head Mock -->
-          <header class="px-4 pt-6 pb-2 bg-[#FEF7FF]">
-            <!-- Camera Cutout notch -->
-            <div class="w-24 h-4 bg-black rounded-full mx-auto mb-2 opacity-90"></div>
+          <!-- Screen Header Area -->
+          <header class="px-4 pt-4 pb-2 bg-[#FEF7FF] flex-shrink-0" id="app-header">
+            <!-- Notch layout (only visible on non-mobile simulated wraps) -->
+            <div class="hidden sm:block w-32 h-4.5 bg-black rounded-b-2xl mx-auto mb-2 opacity-90"></div>
             
-            <div class="flex justify-between items-center mb-3">
+            <div class="flex justify-between items-center mb-2">
               <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-[#EADDFF] rounded-full flex items-center justify-center">
+                <div class="w-9 h-9 bg-[#EADDFF] rounded-full flex items-center justify-center">
                   <span class="material-symbols-outlined text-[#21005D] text-lg">location_on</span>
                 </div>
                 <div class="flex flex-col">
@@ -109,158 +96,771 @@
                   <span class="text-xs font-bold flex items-center gap-0.5 text-[#1D1B20]">Москва, РФ <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span></span>
                 </div>
               </div>
-              <div class="w-8 h-8 rounded-full border border-[#CAC4D0] flex items-center justify-center">
+              <div class="w-9 h-9 rounded-full border border-[#CAC4D0] flex items-center justify-center cursor-pointer hover:bg-[#F3EDF7]">
                 <span class="material-symbols-outlined text-[#49454F] text-lg">person</span>
               </div>
             </div>
-            
-            <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              <div class="bg-[#EADDFF] text-[#21005D] px-2.5 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1 whitespace-nowrap">
-                <span class="material-symbols-outlined text-xs">check_circle</span> Свободно сейчас
-              </div>
-              <div class="border border-[#79747E] px-2.5 py-1.5 rounded-full text-[10px] font-medium flex items-center whitespace-nowrap">Итальянская</div>
-              <div class="border border-[#79747E] px-2.5 py-1.5 rounded-full text-[10px] font-medium flex items-center whitespace-nowrap">Высокий рейтинг</div>
-            </div>
           </header>
 
-          <!-- Core App Body Scroll Zone -->
-          <main class="flex-1 px-4 flex flex-col gap-3 overflow-hidden">
-            
-            <!-- Map Card matching actual Route Screen canvas and visual -->
-            <div class="relative bg-[#F3EDF7] rounded-2xl h-24 flex-shrink-0 flex items-center justify-center overflow-hidden border border-[#D0BCFF]">
-              <!-- Custom Radial dots matching custom design -->
-              <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#6750A4 1.5px, transparent 1.5px); background-size: 14px 14px;"></div>
-              
-              <!-- Indicator marker -->
-              <div class="absolute bottom-1/3 left-1/3 w-2 h-2 bg-[#6750A4] rounded-full ring-4 ring-[#6750A4]/20 animate-pulse"></div>
-              <div class="absolute top-1/3 right-1/4 w-2 h-2 bg-[#6750A4] rounded-full ring-4 ring-[#6750A4]/20"></div>
-              
-              <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-5 h-5 bg-[#B3261E] rounded-full flex items-center justify-center border border-white shadow-md">
+          <!-- Dynamic Active Screen Content Space -->
+          <div id="screen-container" class="flex-1 px-4 overflow-y-auto no-scrollbar pb-4 flex flex-col gap-4">
+            <!-- Rendered dynamically by javascript -->
+          </div>
+
+          <!-- Bottom Navigation Bar matching Kotlin's bottomBar -->
+          <nav class="h-20 bg-[#F3EDF7] border-t border-[#CAC4D0] flex items-center justify-around px-4 pb-2 flex-shrink-0">
+            <!-- Search/Explore Nav Link -->
+            <button onclick="switchScreen('home')" id="nav-home" class="flex flex-col items-center gap-1 text-[#21005D] cursor-pointer">
+              <div class="bg-[#EADDFF] px-5 py-1 rounded-full text-[#21005D] transition-all" id="nav-home-indicator">
+                <span class="material-symbols-outlined">explore</span>
+              </div>
+              <span class="text-[10px] font-bold">Поиск</span>
+            </button>
+
+            <!-- Bookings Nav Link -->
+            <button onclick="switchScreen('reservations')" id="nav-reservations" class="flex flex-col items-center gap-1 text-[#49454F] opacity-70 cursor-pointer">
+              <div class="bg-transparent px-5 py-1 rounded-full transition-all" id="nav-reservations-indicator">
+                <span class="material-symbols-outlined">calendar_today</span>
+              </div>
+              <span class="text-[10px] font-bold">Брони</span>
+            </button>
+
+            <!-- Loyalty Club Nav Link -->
+            <button onclick="switchScreen('loyalty')" id="nav-loyalty" class="flex flex-col items-center gap-1 text-[#49454F] opacity-70 cursor-pointer">
+              <div class="bg-transparent px-5 py-1 rounded-full transition-all" id="nav-loyalty-indicator">
+                <span class="material-symbols-outlined">loyalty</span>
+              </div>
+              <span class="text-[10px] font-bold">Клуб</span>
+            </button>
+          </nav>
+
+        </div>
+      </main>
+
+    </div>
+
+    <!-- Script Zone for 100% interactive database and application states -->
+    <script>
+      // Simulated SQLite/Room database in LocalStorage
+      const DEFAULT_RESTAURANTS = [
+        { id: 1, name: "The Rustic Olive", cuisine: "Итальянская", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60", rating: 4.8, reviews: "1.2k", distance: "250м", timeWalk: "4 мин", freeTables: 2, tags: ["Italian", "Highest Rated"] },
+        { id: 2, name: "Ginger & Soy", cuisine: "Азиатская", image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60", rating: 4.6, reviews: "850", distance: "450м", timeWalk: "7 мин", freeTables: 4, tags: ["Asian"] },
+        { id: 3, name: "La Parisienne", cuisine: "Французская", image: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=500&auto=format&fit=crop&q=60", rating: 4.9, reviews: "1.5k", distance: "600м", timeWalk: "9 мин", freeTables: 1, tags: ["French", "Highest Rated"] },
+        { id: 4, name: "Steak & Fire", cuisine: "Гриль", image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60", rating: 4.7, reviews: "920", distance: "800м", timeWalk: "12 мин", freeTables: 3, tags: ["Grill"] },
+        { id: 5, name: "El Sombrero", cuisine: "Мексиканская", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=500&auto=format&fit=crop&q=60", rating: 4.5, reviews: "640", distance: "1.1км", timeWalk: "15 мин", freeTables: 5, tags: ["Mexican"] },
+        { id: 6, name: "Mamma Mia", cuisine: "Пиццерия", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60", rating: 4.4, reviews: "1.1k", distance: "1.3км", timeWalk: "18 мин", freeTables: 3, tags: ["Italian"] }
+      ];
+
+      const REWARDS = [
+        { id: "coffee", name: "Бесплатный Кофе", price: 150, description: "Свежесваренный капучино или американо", icon: "local_cafe" },
+        { id: "cake", name: "Фирменный Десерт", price: 300, description: "Кусочек нежного чизкейка на ваш выбор", icon: "cake" },
+        { id: "discount", name: "Скидка 15%", price: 500, description: "Скидка на весь чек при следующем посещении", icon: "percent" }
+      ];
+
+      // Initialize App States
+      let currentScreen = "home";
+      let searchKeyword = "";
+      let activeFilter = "all";
+      let selectedRestaurant = null;
+      let userPoints = parseInt(localStorage.getItem("loyalty_points") || "1240");
+      let reservations = JSON.parse(localStorage.getItem("reservations") || "[]");
+
+      function saveStorage() {
+        localStorage.setItem("loyalty_points", userPoints.toString());
+        localStorage.setItem("reservations", JSON.stringify(reservations));
+      }
+
+      // Toast Notifications helper
+      function showToast(message, isSuccess = true) {
+        const toast = document.getElementById("toast");
+        const toastMessage = document.getElementById("toast-message");
+        const toastIcon = document.getElementById("toast-icon");
+        
+        toastMessage.textContent = message;
+        toastIcon.textContent = isSuccess ? "check_circle" : "error";
+        
+        // Style variations
+        if (isSuccess) {
+          toast.className = toast.className.replace("bg-red-700", "bg-[#21005D]").replace("text-red-100", "text-[#EADDFF]");
+        } else {
+          toast.className = toast.className.replace("bg-[#21005D]", "bg-red-700").replace("text-[#EADDFF]", "text-red-100");
+        }
+
+        toast.style.transform = "translateY(0px)";
+        toast.style.opacity = "1";
+
+        setTimeout(() => {
+          toast.style.transform = "translateY(-100px)";
+          toast.style.opacity = "0";
+        }, 2200);
+      }
+
+      // App navigation controllers
+      function switchScreen(screen, arg = null) {
+        currentScreen = screen;
+        
+        // Hide/show header elements based on active screen
+        const header = document.getElementById("app-header");
+        if (screen === "detail" || screen === "route") {
+          header.classList.add("hidden");
+        } else {
+          header.classList.remove("hidden");
+        }
+
+        // Reset bottom navigation active state styles
+        const tabs = ["home", "reservations", "loyalty"];
+        tabs.forEach(tab => {
+          const btn = document.getElementById(`nav-${tab}`);
+          const indicator = document.getElementById(`nav-${tab}-indicator`);
+          if (screen === tab || (screen === "detail" && tab === "home") || (screen === "route" && tab === "home")) {
+            btn.classList.add("text-[#21005D]");
+            btn.classList.remove("text-[#49454F]", "opacity-70");
+            indicator.classList.add("bg-[#EADDFF]", "text-[#21005D]");
+            indicator.classList.remove("bg-transparent");
+          } else {
+            btn.classList.remove("text-[#21005D]");
+            btn.classList.add("text-[#49454F]", "opacity-70");
+            indicator.classList.remove("bg-[#EADDFF]", "text-[#21005D]");
+            indicator.classList.add("bg-transparent");
+          }
+        });
+
+        if (screen === "detail") {
+          selectedRestaurant = arg;
+        }
+
+        renderActiveScreen();
+      }
+
+      function filterCategory(category) {
+        activeFilter = category;
+        renderActiveScreen();
+      }
+
+      function searchRestaurant(val) {
+        searchKeyword = val.toLowerCase();
+        renderActiveScreen();
+      }
+
+      // Screen Compilation Mechanics
+      function renderActiveScreen() {
+        const container = document.getElementById("screen-container");
+        container.innerHTML = ""; // reset
+
+        if (currentScreen === "home") {
+          renderHomeScreen(container);
+        } else if (currentScreen === "detail") {
+          renderDetailScreen(container);
+        } else if (currentScreen === "route") {
+          renderRouteScreen(container);
+        } else if (currentScreen === "reservations") {
+          renderReservationsScreen(container);
+        } else if (currentScreen === "loyalty") {
+          renderLoyaltyScreen(container);
+        }
+      }
+
+      // Screen Explores
+      function renderHomeScreen(container) {
+        // Search bar tag
+        const searchDiv = document.createElement("div");
+        searchDiv.className = "flex flex-col gap-3";
+        searchDiv.innerHTML = `
+          <div class="relative flex items-center">
+            <span class="material-symbols-outlined absolute left-4 text-[#49454F]">search</span>
+            <input type="text" placeholder="Поиск ресторанов, блюд..." value="${searchKeyword}" oninput="searchRestaurant(this.value)" class="w-full bg-[#F3EDF7] border-0 text-[#1D1B20] text-sm py-3.5 pl-12 pr-4 rounded-full focus:outline-none focus:ring-2 focus:ring-[#6750A4]" />
+          </div>
+          <!-- Category Chips -->
+          <div class="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar">
+            <button onclick="filterCategory('all')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'all' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Все</button>
+            <button onclick="filterCategory('Italian')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Italian' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Итальянская</button>
+            <button onclick="filterCategory('Asian')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Asian' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Азиатская</button>
+            <button onclick="filterCategory('French')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'French' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Французская</button>
+            <button onclick="filterCategory('Grill')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Grill' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Гриль</button>
+          </div>
+        `;
+        container.appendChild(searchDiv);
+
+        // Map live view
+        const mapDiv = document.createElement("div");
+        mapDiv.className = "relative bg-[#F3EDF7] rounded-3xl h-32 flex-shrink-0 flex items-center justify-center overflow-hidden border border-[#D0BCFF] cursor-pointer";
+        mapDiv.onclick = () => {
+          switchScreen('route', DEFAULT_RESTAURANTS[0]);
+        };
+        mapDiv.innerHTML = `
+          <div class="absolute inset-0 opacity-25" style="background-image: radial-gradient(#6750A4 1.5px, transparent 1.5px); background-size: 16px 16px;"></div>
+          <div class="absolute bottom-1/3 left-1/3 w-2.5 h-2.5 bg-[#6750A4] rounded-full ring-4 ring-[#6750A4]/20 animate-pulse"></div>
+          <div class="absolute top-1/4 right-1/4 w-2.5 h-2.5 bg-[#6750A4] rounded-full ring-4 ring-[#6750A4]/20"></div>
+          <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-6 h-6 bg-[#B3261E] rounded-full flex items-center justify-center border-2 border-white shadow-md">
+            <span class="material-symbols-outlined text-white text-[11px]">restaurant</span>
+          </div>
+          <div class="absolute bottom-3 right-3 bg-white/90 px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1 scale-90">
+            <span class="material-symbols-outlined text-xs text-[#6750A4]">navigation</span>
+            <span class="text-[9px] font-extrabold text-[#1D1B20]">ЦЕНТР</span>
+          </div>
+        `;
+        container.appendChild(mapDiv);
+
+        // Filter algorithm
+        const filtered = DEFAULT_RESTAURANTS.filter(res => {
+          const matchKeyword = res.name.toLowerCase().includes(searchKeyword) || res.cuisine.toLowerCase().includes(searchKeyword);
+          const matchCategory = activeFilter === "all" || res.tags.includes(activeFilter);
+          return matchKeyword && matchCategory;
+        });
+
+        // Listing Title
+        const listHeader = document.createElement("div");
+        listHeader.className = "flex justify-between items-center";
+        listHeader.innerHTML = `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Все свободные столики (${filtered.length})</span>`;
+        container.appendChild(listHeader);
+
+        // Cards list
+        const listDiv = document.createElement("div");
+        listDiv.className = "flex flex-col gap-4";
+
+        if (filtered.length === 0) {
+          listDiv.innerHTML = `
+            <div class="py-12 text-center text-[#49454F]">
+              <span class="material-symbols-outlined text-4xl mb-2 opacity-50">search_off</span>
+              <p class="text-sm">Ничего не найдено</p>
+            </div>
+          `;
+        } else {
+          filtered.forEach(res => {
+            const card = document.createElement("div");
+            card.className = "bg-[#F3EDF7] p-4 rounded-3xl flex flex-col justify-between border border-[#D0BCFF] gap-3";
+            card.innerHTML = `
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <span class="bg-[#C4E7FF] text-[#001E2F] px-2 py-0.5 rounded text-[9px] font-bold tracking-wider">ТОП ВЫБОР</span>
+                    <span class="text-[#B3261E] text-[10px] font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 bg-[#B3261E] rounded-full animate-ping"></span>
+                      ${res.freeTables} СТОЛА СВОБОДНО
+                    </span>
+                  </div>
+                  <h3 class="text-lg font-bold tracking-tight text-[#1D1B20]">${res.name}</h3>
+                  <p class="text-xs text-[#49454F] mt-0.5">${res.cuisine} кулинария • ${res.rating} ★ (${res.reviews} отзывов)</p>
+                </div>
+                <div class="bg-white px-2.5 py-1.5 rounded-xl border border-[#CAC4D0] text-center min-w-[55px]">
+                  <div class="text-[11px] font-bold">${res.distance}</div>
+                  <div class="text-[8px] opacity-65 tracking-wider font-extrabold uppercase">Рядом</div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 py-1.5 border-t border-[#CAC4D0]/30">
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[8px] uppercase tracking-wider text-[#49454F]">Бонусы клуба</span>
+                  <div class="flex items-center gap-1 text-[#6750A4]">
+                    <span class="material-symbols-outlined text-sm">toll</span>
+                    <span class="text-xs font-bold">+50 Баллов</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-0.5">
+                  <span class="text-[8px] uppercase tracking-wider text-[#49454F]">В пути пешком</span>
+                  <div class="flex items-center gap-1 text-[#1D1B20]">
+                    <span class="material-symbols-outlined text-sm">directions_walk</span>
+                    <span class="text-xs font-bold">${res.timeWalk}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex gap-2">
+                <button onclick="switchScreen('detail', ${JSON.stringify(res).replace(/"/g, '&quot;')})" class="flex-1 py-3 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform hover:bg-[#5b4693] cursor-pointer">Забронировать</button>
+                <button onclick="switchScreen('route', ${JSON.stringify(res).replace(/"/g, '&quot;')})" class="w-11 h-11 border border-[#79747E] rounded-full flex items-center justify-center active:scale-95 transition-transform hover:bg-white/50 cursor-pointer text-[#49454F]">
+                  <span class="material-symbols-outlined">directions</span>
+                </button>
+              </div>
+            `;
+            listDiv.appendChild(card);
+          });
+        }
+        container.appendChild(listDiv);
+
+        // Static Small quick points block
+        const statusBlock = document.createElement("div");
+        statusBlock.className = "bg-[#21005D] p-4 rounded-3xl flex items-center justify-between cursor-pointer active:scale-98 transition-transform mt-2";
+        statusBlock.onclick = () => switchScreen('loyalty');
+        statusBlock.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-[#D0BCFF] rounded-lg flex items-center justify-center">
+              <span class="material-symbols-outlined text-[#21005D] text-lg">stars</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-[9px] text-[#D0BCFF] uppercase font-bold tracking-wider">Клуб Привилегий</span>
+              <span class="text-xs text-white font-medium">Золотой Уровень • ${userPoints} баллов</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined text-[#D0BCFF]">chevron_right</span>
+        `;
+        container.appendChild(statusBlock);
+      }
+
+      // Detail Booking screen
+      function renderDetailScreen(container) {
+        if (!selectedRestaurant) {
+          switchScreen('home');
+          return;
+        }
+
+        // Back action bar
+        const backBar = document.createElement("div");
+        backBar.className = "flex items-center gap-3 py-2";
+        backBar.innerHTML = `
+          <button onclick="switchScreen('home')" class="w-9 h-9 bg-[#F3EDF7] rounded-full border border-[#CAC4D0] flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+          </button>
+          <span class="text-sm font-bold text-[#1D1B20]">Детали Ресторана</span>
+        `;
+        container.appendChild(backBar);
+
+        // Core visual hero banner
+        const heroCard = document.createElement("div");
+        heroCard.className = "relative rounded-3xl overflow-hidden h-36 border border-[#CAC4D0]/40";
+        heroCard.innerHTML = `
+          <img src="${selectedRestaurant.image}" class="w-full h-full object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-4 left-4 right-4 text-white">
+            <span class="bg-[#C4E7FF] text-[#001E2F] text-[9px] font-bold px-2 py-0.5 rounded tracking-wide uppercase">${selectedRestaurant.cuisine}</span>
+            <h2 class="text-xl font-bold mt-1 tracking-tight">${selectedRestaurant.name}</h2>
+          </div>
+        `;
+        container.appendChild(heroCard);
+
+        // Details details
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "bg-[#F3EDF7] p-4 rounded-3xl border border-[#D0BCFF] flex flex-col gap-3";
+        infoDiv.innerHTML = `
+          <div>
+            <h4 class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Описание заведения</h4>
+            <p class="text-xs text-[#1D1B20] leading-relaxed mt-1">
+              Премиальная локационная кухня. Отличные повара, великолепный вид, уютная атмосфера и идеальное обслуживание прямо в центре города.
+            </p>
+          </div>
+          <div class="flex justify-between text-xs py-2 border-t border-[#CAC4D0]/30">
+            <span class="text-[#49454F]">Свободно сейчас:</span>
+            <span class="font-extrabold text-[#B3261E]">${selectedRestaurant.freeTables} стола</span>
+          </div>
+        `;
+        container.appendChild(infoDiv);
+
+        // Form selection parameters (Emulating Jetpack Compose inputs)
+        const formDiv = document.createElement("div");
+        formDiv.className = "bg-white p-4 rounded-3xl border border-[#CAC4D0] flex flex-col gap-4";
+        formDiv.innerHTML = `
+          <h4 class="text-xs text-[#21005D] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">room_service</span> Выберите параметры бронирования
+          </h4>
+          
+          <!-- Guests count fields -->
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[10px] text-[#49454F] font-semibold">Количество гостей:</span>
+            <div class="grid grid-cols-4 gap-2">
+              <button onclick="selectGuestCount(1)" id="guests-1" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#6750A4] bg-[#EADDFF] text-[#21005D]">1 гость</button>
+              <button onclick="selectGuestCount(2)" id="guests-2" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">2 гостя</button>
+              <button onclick="selectGuestCount(4)" id="guests-4" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">4 гостя</button>
+              <button onclick="selectGuestCount(6)" id="guests-6" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">6+ мест</button>
+            </div>
+          </div>
+
+          <!-- Date Selector standard -->
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[10px] text-[#49454F] font-semibold">Дата визита:</span>
+            <input type="date" id="booking-date" class="bg-[#F3EDF7] border border-[#CAC4D0] text-xs py-3 px-4 rounded-xl text-[#1D1B20] focus:outline-none focus:ring-1 focus:ring-[#6750A4] font-medium" />
+          </div>
+
+          <!-- Time picker selector slots -->
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[10px] text-[#49454F] font-semibold">Время бронирования:</span>
+            <div class="grid grid-cols-4 gap-1.5">
+              <button onclick="selectTimeSlot('18:00')" id="time-18" class="py-2 border text-xs font-bold rounded-lg border-[#6750A4] bg-[#EADDFF] text-[#21005D]">18:00</button>
+              <button onclick="selectTimeSlot('19:00')" id="time-19" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">19:00</button>
+              <button onclick="selectTimeSlot('20:00')" id="time-20" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">20:00</button>
+              <button onclick="selectTimeSlot('21:00')" id="time-21" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">21:00</button>
+            </div>
+          </div>
+          
+          <button onclick="executeBooking()" class="w-full py-4 mt-2 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#5b4693] active:scale-95 transition-all cursor-pointer">ПОДТВЕРДИТЬ БРОНИРОВАНИЕ</button>
+        `;
+        container.appendChild(formDiv);
+
+        // Prepopulate today date for the input
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("booking-date").value = today;
+
+        // Form state data values variables
+        window.selectedGuests = 1;
+        window.selectedTimeSlot = '18:00';
+      }
+
+      window.selectGuestCount = function(count) {
+        window.selectedGuests = count;
+        [1, 2, 4, 6].forEach(g => {
+          const el = document.getElementById(`guests-${g}`);
+          if (g === count) {
+            el.className = "py-2.5 rounded-xl border text-xs font-bold transition-all border-[#6750A4] bg-[#EADDFF] text-[#21005D]";
+          } else {
+            el.className = "py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]";
+          }
+        });
+      };
+
+      window.selectTimeSlot = function(time) {
+        window.selectedTimeSlot = time;
+        ['18', '19', '20', '21'].forEach(t => {
+          const val = `${t}:00`;
+          const el = document.getElementById(`time-${t}`);
+          if (val === time) {
+            el.className = "py-2 border text-xs font-bold rounded-lg border-[#6750A4] bg-[#EADDFF] text-[#21005D]";
+          } else {
+            el.className = "py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]";
+          }
+        });
+      };
+
+      window.executeBooking = function() {
+        const dateVal = document.getElementById("booking-date").value;
+        if (!dateVal) {
+          showToast("Пожалуйста, укажите дату!", false);
+          return;
+        }
+
+        // New record booking
+        const newReservation = {
+          id: Date.now(),
+          restaurantName: selectedRestaurant.name,
+          cuisine: selectedRestaurant.cuisine,
+          guests: window.selectedGuests,
+          date: dateVal,
+          time: window.selectedTimeSlot,
+          table: Math.floor(Math.random() * 8) + 1,
+          status: "Активно"
+        };
+
+        reservations.push(newReservation);
+        
+        // Reward 50 Points on booking
+        userPoints += 50;
+
+        saveStorage();
+        showToast("Столик успешно забронирован! Начислено +50 баллов!");
+        
+        setTimeout(() => {
+          switchScreen("reservations");
+        }, 800);
+      };
+
+      // Route screen visual rendering
+      function renderRouteScreen(container) {
+        const targetRes = selectedRestaurant || DEFAULT_RESTAURANTS[0];
+
+        const topBar = document.createElement("div");
+        topBar.className = "flex items-center gap-3 py-2";
+        topBar.innerHTML = `
+          <button onclick="switchScreen('home')" class="w-9 h-9 bg-[#F3EDF7] rounded-full border border-[#CAC4D0] flex items-center justify-center cursor-pointer">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+          </button>
+          <span class="text-sm font-bold text-[#1D1B20]">Маршрут к "${targetRes.name}"</span>
+        `;
+        container.appendChild(topBar);
+
+        // Mode switch triggers
+        const modes = document.createElement("div");
+        modes.className = "bg-[#F3EDF7] p-1.5 rounded-full flex border border-[#CAC4D0]";
+        modes.innerHTML = `
+          <button onclick="window.setRouteMode('walk')" id="route-walk" class="flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all bg-[#6750A4] text-white">
+            <span class="material-symbols-outlined text-sm">directions_walk</span> Пешком (4 мин)
+          </button>
+          <button onclick="window.setRouteMode('car')" id="route-car" class="flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all text-[#49454F]">
+            <span class="material-symbols-outlined text-sm">directions_car</span> На машине (2 мин)
+          </button>
+        `;
+        container.appendChild(modes);
+
+        // Path description directions panel
+        const panel = document.createElement("div");
+        panel.id = "route-info-panel";
+        panel.className = "bg-white p-4 rounded-3xl border border-[#CAC4D0] flex flex-col gap-3";
+        panel.innerHTML = `
+          <div class="flex items-center gap-2 text-xs font-bold text-[#21005D]">
+            <span class="material-symbols-outlined">navigation</span> ШАГИ ПЕШЕХОДНОГО ПУТИ
+          </div>
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-start gap-2 text-xs">
+              <span class="material-symbols-outlined text-sm text-[#6750A4] mt-0.5">turn_right</span>
+              <span>Поверните направо на перекрестке в сторону Тверской ул.</span>
+            </div>
+            <div class="flex items-start gap-2 text-xs">
+              <span class="material-symbols-outlined text-sm text-[#6750A4] mt-0.5">arrow_upward</span>
+              <span>Идите прямо 180м мимо торгового центра.</span>
+            </div>
+            <div class="flex items-start gap-2 text-xs">
+              <span class="material-symbols-outlined text-sm text-[#B3261E] mt-0.5">restaurant</span>
+              <span class="font-bold">Пункт назначения "${targetRes.name}" будет справа!</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(panel);
+
+        // Interactive Canvas graphics route drawer
+        const canvasCard = document.createElement("div");
+        canvasCard.className = "bg-[#F3EDF7] rounded-3xl p-4 border border-[#D0BCFF] h-44 relative flex flex-col justify-between overflow-hidden";
+        canvasCard.innerHTML = `
+          <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#6750A4 1.5px, transparent 1.5px); background-size: 14px 14px;"></div>
+          
+          <div class="relative w-full h-full">
+            <!-- Starting point pin -->
+            <div class="absolute bottom-6 left-12 flex flex-col items-center">
+              <div class="w-3.5 h-3.5 bg-[#6750A4] rounded-full flex items-center justify-center border-2 border-white shadow"></div>
+              <span class="text-[8px] font-bold text-[#49454F] mt-0.5 bg-white/85 px-1 rounded">Вы</span>
+            </div>
+
+            <!-- Intersect line path -->
+            <div id="route-svg-path" class="absolute inset-0 z-0">
+              <svg width="100%" height="100%" class="h-full w-full">
+                <!-- Pedestrian SVG dashed route -->
+                <path d="M 50 120 L 180 80 L 180 30" fill="transparent" stroke="#6750A4" stroke-width="3" stroke-dasharray="5 4" id="path-line" />
+              </svg>
+            </div>
+
+            <!-- Destination target dot pin -->
+            <div class="absolute top-4 right-1/2 translate-x-12 flex flex-col items-center z-10 animate-bounce">
+              <div class="w-5 h-5 bg-[#B3261E] rounded-full flex items-center justify-center border border-white shadow-md">
                 <span class="material-symbols-outlined text-white text-[10px]">restaurant</span>
               </div>
-              
-              <div class="absolute bottom-2 right-2 bg-white/90 px-2 py-1 rounded-full shadow-sm flex items-center gap-1 scale-75 origin-bottom-right">
-                <span class="material-symbols-outlined text-xs text-[#6750A4]">navigation</span>
-                <span class="text-[8px] font-bold">ЦЕНТР</span>
-              </div>
+              <span class="text-[8px] font-extrabold text-[#B3261E] mt-0.5 bg-white/95 px-1 rounded border border-[#B3261E]/30">${targetRes.name}</span>
             </div>
+          </div>
+        `;
+        container.appendChild(canvasCard);
 
-            <!-- Active Featured Restaurant Card -->
-            <div class="bg-[#F3EDF7] p-3 rounded-2xl flex-1 flex flex-col justify-between border border-[#D0BCFF] min-h-[170px]">
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span class="bg-[#C4E7FF] text-[#001E2F] px-1.5 py-0.5 rounded text-[8px] font-bold">ТОП ВЫБОР</span>
-                  <span class="text-[#B3261E] text-[8px] font-bold flex items-center gap-0.5">
-                    <span class="w-1 h-1 bg-[#B3261E] rounded-full animate-ping"></span> 2 СТОЛА СВОБОДНО
-                  </span>
-                </div>
-                <h3 class="text-md font-bold tracking-tight text-[#1D1B20]">Рустик Олив</h3>
-                <p class="text-[10px] text-[#49454F] mt-0.5">Итальянская кухня • • 4.8 ★ (1.2k отзывов)</p>
-              </div>
+        window.setRouteMode = function(mode) {
+          const btnWalk = document.getElementById("route-walk");
+          const btnCar = document.getElementById("route-car");
+          const pathLine = document.getElementById("path-line");
+          const panel = document.getElementById("route-info-panel");
 
-              <!-- Extra statistics details mapped carefully to Geometric design style -->
-              <div class="flex gap-2 py-2 border-t border-[#CAC4D0]/40">
-                <div class="flex-1 flex flex-col">
-                  <span class="text-[7px] uppercase tracking-wider text-[#49454F]">Бонусы лояльности</span>
-                  <div class="flex items-center gap-1 text-[#6750A4]">
-                    <span class="material-symbols-outlined text-xs">toll</span>
-                    <span class="text-[10px] font-bold">+50 Баллов</span>
-                  </div>
-                </div>
-                <div class="flex-1 flex flex-col">
-                  <span class="text-[7px] uppercase tracking-wider text-[#49454F]">Пешком идти</span>
-                  <div class="flex items-center gap-1">
-                    <span class="material-symbols-outlined text-xs">directions_walk</span>
-                    <span class="text-[10px] font-bold">4 минуты</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Visual Action button triggers similar to android -->
-              <div class="flex gap-1.5">
-                <button class="flex-1 h-8 bg-[#6750A4] text-white rounded-full font-bold text-[10px] hover:opacity-90">ЗАБРОНИРОВАТЬ</button>
-                <button class="w-8 h-8 border border-[#79747E] rounded-full flex items-center justify-center"><span class="material-symbols-outlined text-sm">directions</span></button>
-              </div>
-            </div>
-
-            <!-- Member Gold loyalty status card matching M3 layout closely -->
-            <div class="bg-[#21005D] p-2.5 rounded-xl flex items-center justify-between h-10 flex-shrink-0 cursor-pointer">
-              <div class="flex items-center gap-2">
-                <div class="w-6 h-6 bg-[#D0BCFF] rounded flex items-center justify-center">
-                  <span class="material-symbols-outlined text-[#21005D] text-sm">stars</span>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-[7px] text-[#D0BCFF] uppercase font-bold">Золотой статус</span>
-                  <span class="text-[9px] text-white">Золотой Уровень • 1,240 баллов</span>
-                </div>
-              </div>
-              <span class="material-symbols-outlined text-[#D0BCFF] text-sm">chevron_right</span>
-            </div>
+          if (mode === "walk") {
+            btnWalk.className = "flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all bg-[#6750A4] text-white";
+            btnCar.className = "flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all text-[#49454F]";
+            pathLine.setAttribute("stroke-dasharray", "5 4");
+            pathLine.setAttribute("stroke", "#6750A4");
             
-          </main>
-
-          <!-- Android Platform Simulating Bottom Navigation Bar -->
-          <nav class="h-16 bg-[#F3EDF7] border-t border-[#CAC4D0] flex items-center justify-around px-2 pb-2">
-            <div class="flex flex-col items-center gap-0.5 text-[#21005D]">
-              <div class="bg-[#EADDFF] px-4 py-0.5 rounded-full">
-                <span class="material-symbols-outlined text-md">explore</span>
+            panel.innerHTML = `
+              <div class="flex items-center gap-2 text-xs font-bold text-[#21005D]">
+                <span class="material-symbols-outlined">navigation</span> ШАГИ ПЕШЕХОДНОГО ПУТИ
               </div>
-              <span class="text-[8px] font-bold">Поиск</span>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#6750A4] mt-0.5">turn_right</span>
+                  <span>Поверните направо на перекрестке в сторону Тверской ул.</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#6750A4] mt-0.5">arrow_upward</span>
+                  <span>Идите прямо 180м мимо торгового центра.</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#B3261E] mt-0.5">restaurant</span>
+                  <span class="font-bold">Пункт назначения "${targetRes.name}" будет справа!</span>
+                </div>
+              </div>
+            `;
+          } else {
+            btnCar.className = "flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all text-[#49454F]";
+            btnCar.className = "flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all bg-[#6750A4] text-white";
+            btnWalk.className = "flex-1 py-2 text-xs font-bold rounded-full flex items-center justify-center gap-2 transition-all text-[#49454F]";
+            pathLine.removeAttribute("stroke-dasharray");
+            pathLine.setAttribute("stroke", "#B3261E");
+
+            panel.innerHTML = `
+              <div class="flex items-center gap-2 text-xs font-bold text-red-800">
+                <span class="material-symbols-outlined">navigation</span> КАРТА АВТОМОБИЛЬНОГО ДВИЖЕНИЯ
+              </div>
+              <div class="flex flex-col gap-2.5">
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#B3261E] mt-0.5">turn_right</span>
+                  <span>Двигайтесь на восток по ул. Охотный Ряд.</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#B3261E] mt-0.5">turn_left</span>
+                  <span>Развернитесь на светофоре у Тверской площади.</span>
+                </div>
+                <div class="flex items-start gap-2 text-xs">
+                  <span class="material-symbols-outlined text-sm text-[#B3261E] mt-0.5">park</span>
+                  <span>Парковка доступна за углом ресторана.</span>
+                </div>
+              </div>
+            `;
+          }
+        };
+      }
+
+      // Reservations list Screen logic
+      function renderReservationsScreen(container) {
+        const titleHeader = document.createElement("h2");
+        titleHeader.className = "text-xl font-black text-[#1D1B20]";
+        titleHeader.textContent = "Ваши Бронирования";
+        container.appendChild(titleHeader);
+
+        const listDiv = document.createElement("div");
+        listDiv.className = "flex flex-col gap-4";
+
+        if (reservations.length === 0) {
+          listDiv.innerHTML = `
+            <div class="py-12 bg-[#F3EDF7] rounded-3xl border border-[#D0BCFF] text-center p-6 flex flex-col items-center gap-2">
+              <span class="material-symbols-outlined text-4xl text-[#1D1B20] opacity-40">event_busy</span>
+              <p class="text-sm font-semibold">У вас пока нет активных броней столов.</p>
+              <p class="text-xs text-[#49454F]">Зайдите на главную страницу поиска ресторанов поблизости, чтобы сделать свой первый заказ.</p>
+              <button onclick="switchScreen('home')" class="mt-4 px-6 py-2.5 bg-[#6750A4] text-white rounded-full text-xs font-bold uppercase tracking-wider cursor-pointer">Перейти к поиску</button>
             </div>
-            <div class="flex flex-col items-center gap-0.5 text-[#49454F] opacity-70">
-              <span class="material-symbols-outlined text-md">calendar_today</span>
-              <span class="text-[8px] font-medium">Бронь</span>
+          `;
+        } else {
+          reservations.forEach(r => {
+            const card = document.createElement("div");
+            card.className = "bg-[#F3EDF7] p-4 rounded-3xl border border-[#D0BCFF] flex flex-col gap-3.5";
+            card.innerHTML = `
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="inline-flex gap-1 items-center bg-[#C4E7FF] text-[#001E2F] px-2 py-0.5 rounded text-[8px] font-bold tracking-wider uppercase mb-1">
+                    <span class="material-symbols-outlined text-[9px]">event_available</span> ${r.status}
+                  </div>
+                  <h3 class="text-md font-bold text-[#1D1B20]">${r.restaurantName}</h3>
+                  <p class="text-xs text-[#49454F]">${r.cuisine} кухня</p>
+                </div>
+                <div class="bg-white/80 px-2.5 py-1.5 rounded-lg border border-[#CAC4D0] text-center min-w-[50px]">
+                  <span class="text-[10px] font-bold text-[#6750A4]">Стол №${r.table}</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3.5 pt-2 border-t border-[#CAC4D0]/30 text-xs">
+                <div>
+                  <span class="text-[8px] uppercase font-bold text-[#49454F] block">Дата и время</span>
+                  <p class="font-semibold text-[#1D1B20] flex items-center gap-1 mt-0.5">
+                    <span class="material-symbols-outlined text-xs">calendar_today</span> ${r.date} • ${r.time}
+                  </p>
+                </div>
+                <div>
+                  <span class="text-[8px] uppercase font-bold text-[#49454F] block">Количество гостей</span>
+                  <p class="font-semibold text-[#1D1B20] flex items-center gap-1 mt-0.5">
+                    <span class="material-symbols-outlined text-xs">group</span> ${r.guests} чел.
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex gap-2">
+                <button onclick="cancelBooking(${r.id})" class="flex-1 py-2.5 border border-[#B3261E] text-[#B3261E] hover:bg-red-50 font-bold text-xs uppercase tracking-wider rounded-full transition-colors cursor-pointer">Отменить Бронь</button>
+              </div>
+            `;
+            listDiv.appendChild(card);
+          });
+        }
+
+        container.appendChild(listDiv);
+      }
+
+      window.cancelBooking = function(id) {
+        if (confirm("Вы действительно хотите отменить бронирование столика?")) {
+          reservations = reservations.filter(r => r.id !== id);
+          saveStorage();
+          showToast("Бронирование успешно отменено.");
+          renderActiveScreen();
+        }
+      };
+
+      // Loyalty LoyaltyScreen layout drawing
+      function renderLoyaltyScreen(container) {
+        const titleHeader = document.createElement("h2");
+        titleHeader.className = "text-xl font-black text-[#1D1B20]";
+        titleHeader.textContent = "Клуб Лояльности";
+        container.appendChild(titleHeader);
+
+        // Gold Tier Visual Badge
+        const cardTier = document.createElement("div");
+        cardTier.className = "bg-[#21005D] p-5 rounded-3xl flex flex-col gap-4 relative overflow-hidden border border-[#D0BCFF] shadow-md";
+        cardTier.innerHTML = `
+          <!-- Decorative radial layout background design -->
+          <div class="absolute inset-0 opacity-15" style="background-image: radial-gradient(#FEF7FF 1.5px, transparent 1.5px); background-size: 14px 14px;"></div>
+          
+          <div class="flex justify-between items-start relative z-10">
+            <div>
+              <span class="bg-[#D0BCFF] text-[#21005D] px-2 py-0.5 rounded text-[8px] font-bold tracking-wider uppercase">Член Клуба</span>
+              <h3 class="text-xl font-bold text-white tracking-tight mt-1">Золотой Уровень</h3>
             </div>
-            <div class="flex flex-col items-center gap-0.5 text-[#49454F] opacity-70">
-              <span class="material-symbols-outlined text-md">loyalty</span>
-              <span class="text-[8px] font-medium">Клуб</span>
+            <span class="material-symbols-outlined text-3xl text-[#D0BCFF]">stars</span>
+          </div>
+
+          <div class="flex justify-between items-end relative z-10 pt-2">
+            <div class="flex flex-col">
+              <span class="text-[8px] text-[#D0BCFF] uppercase font-bold tracking-wider">Баланс ваших привилегий</span>
+              <span class="text-2xl font-black text-white flex items-center gap-1.5 mt-1" id="points-counter">
+                <span class="material-symbols-outlined text-lg text-[#D0BCFF] animate-spin-slow">toll</span>
+                ${userPoints} БП
+              </span>
             </div>
-          </nav>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- Detailed Guide Section on How To Run Android App -->
-    <section class="bg-[#F3EDF7] border-t border-b border-[#CAC4D0] py-12 px-6" id="how-to-run">
-      <div class="max-w-4xl mx-auto flex flex-col gap-6">
-        <h2 class="text-2xl font-bold tracking-tight text-[#21005D] flex items-center gap-2">
-          <span class="material-symbols-outlined text-2xl">rocket_launch</span> Руководство по запуску Android Приложения
-        </h2>
-        <p class="text-sm text-[#49454F] leading-relaxed">
-          Вся мощная бизнес-логика, включая оффлайн-сохранение через Room DB, интерактивную анимацию Jetpack Compose и навигацию, находится внутри папки <strong>/app</strong>. Инструкция ниже объясняет, как запустить этот проект.
-        </p>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-[#CAC4D0]">
-            <div class="text-[#6750A4] font-extrabold text-2xl mb-2">01</div>
-            <h4 class="font-bold text-sm mb-1">Стриминг в Браузере</h4>
-            <p class="text-xs text-[#49454F] leading-relaxed">Экран интерактивного Streaming Android Emulator доступен прямо в интерфейсе <strong>Google AI Studio</strong>. Он автоматически обновляется при сохранении кода.</p>
+            <button onclick="earnPoints()" class="px-4 py-2 bg-white text-[#21005D] hover:bg-[#EADDFF] border border-transparent rounded-full text-[10px] font-black uppercase tracking-wider cursor-pointer shadow-sm active:scale-95 transition-all">Получить +50</button>
           </div>
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-[#CAC4D0]">
-            <div class="text-[#6750A4] font-extrabold text-2xl mb-2">02</div>
-            <h4 class="font-bold text-sm mb-1">Экспорт в ZIP</h4>
-            <p class="text-xs text-[#49454F] leading-relaxed">Вы можете экспортировать проект полностью в ZIP архив через настройки/меню AI Studio, чтобы импортировать его в локальную <strong>Android Studio</strong>.</p>
-          </div>
-          <div class="bg-white p-5 rounded-2xl shadow-sm border border-[#CAC4D0]">
-            <div class="text-[#6750A4] font-extrabold text-2xl mb-2">03</div>
-            <h4 class="font-bold text-sm mb-1">Сборка APK</h4>
-            <p class="text-xs text-[#49454F] leading-relaxed">Запустите команду сборки или воспользуйтесь интерфейсом AI Studio, чтобы получить готовый к установке на ваш физический телефон APK-файл.</p>
-          </div>
-        </div>
-      </div>
-    </section>
+        `;
+        container.appendChild(cardTier);
 
-    <!-- Footer Page Block -->
-    <footer class="bg-[#1D1B20] text-[#FEF7FF] py-8 px-6 text-center border-t border-[#CAC4D0]/10">
-      <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-        <p class="text-xs opacity-65">&copy; 2026 Table Reserve. Создано с помощью Kotlin, Jetpack Compose & Google AI Studio Build.</p>
-        <div class="flex gap-4">
-          <span class="text-xs text-[#D0BCFF] font-bold">Material Design 3</span>
-          <span class="text-xs text-[#D0BCFF] font-bold">SQLite / Room DB</span>
-        </div>
-      </div>
-    </footer>
+        // Store headers
+        const storeTitle = document.createElement("h3");
+        storeTitle.className = "text-xs text-[#49454F] font-bold uppercase tracking-wider block mt-2";
+        storeTitle.textContent = "Обмен бонусов на подарки";
+        container.appendChild(storeTitle);
 
+        // Rewards store catalogue 
+        const shopDiv = document.createElement("div");
+        shopDiv.className = "flex flex-col gap-3";
+        
+        REWARDS.forEach(reward => {
+          const item = document.createElement("div");
+          item.className = "bg-[#F3EDF7] p-4 rounded-3xl border border-[#D0BCFF] flex items-center justify-between gap-3";
+          item.innerHTML = `
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center border border-[#CAC4D0] flex-shrink-0 text-[#6750A4]">
+                <span class="material-symbols-outlined">${reward.icon}</span>
+              </div>
+              <div class="flex flex-col">
+                <h4 class="font-bold text-xs text-[#1D1B20]">${reward.name}</h4>
+                <p class="text-[10px] text-[#49454F] mt-0.5">${reward.description}</p>
+              </div>
+            </div>
+            <button onclick="claimReward('${reward.id}', ${reward.price}, '${reward.name}')" class="px-3.5 py-2.5 bg-[#6750A4] text-white hover:bg-[#5b4693] font-bold text-[10px] tracking-wider uppercase rounded-full whitespace-nowrap active:scale-95 transition-all cursor-pointer flex items-center gap-1">
+              ${reward.price} БП
+            </button>
+          `;
+          shopDiv.appendChild(item);
+        });
+
+        container.appendChild(shopDiv);
+      }
+
+      window.earnPoints = function() {
+        userPoints += 50;
+        saveStorage();
+        showToast("Успех! Баланс пополнен на +50 баллов!");
+        
+        // Instant domestic updates of balance UI without total reload
+        const counter = document.getElementById("points-counter");
+        if (counter) {
+          counter.innerHTML = `<span class="material-symbols-outlined text-lg text-[#D0BCFF]">toll</span> ${userPoints} БП`;
+        }
+      };
+
+      window.claimReward = function(id, price, name) {
+        if (userPoints < price) {
+          showToast(`Недостаточно баллов для "${name}"! Требуется ${price} БП (у вас ${userPoints})`, false);
+          return;
+        }
+
+        userPoints -= price;
+        saveStorage();
+        showToast(`Подарок "${name}" успешно активирован! Списано ${price} БП.`);
+        renderActiveScreen();
+      };
+
+      // Initial Bootstrap launch sequence
+      renderActiveScreen();
+    </script>
   </body>
 </html>
