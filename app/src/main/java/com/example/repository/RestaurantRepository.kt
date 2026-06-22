@@ -42,6 +42,11 @@ class RestaurantRepository(private val appDao: AppDao) {
             if (rewardsList.isEmpty()) {
                 appDao.insertRewards(LoyaltyReward.getMockRewards())
             }
+            // Seed restaurants
+            val restaurantsList = appDao.getAllRestaurants().first()
+            if (restaurantsList.isEmpty()) {
+                appDao.insertRestaurants(Restaurant.getMockRestaurants())
+            }
             isSeeded = true
         }
     }

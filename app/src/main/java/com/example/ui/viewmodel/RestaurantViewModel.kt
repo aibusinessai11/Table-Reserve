@@ -38,13 +38,42 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     val message = _message.asSharedFlow()
 
     // Core streams
+    data class SearchFilterState(
+        val onlyAvailable: Boolean,
+        val radiusKm: Int,
+        val lat: Double,
+        val lon: Double
+    )
+
+    private val filterStateFlow = combine(
+        onlyAvailable,
+        searchRadiusKm,
+        userLatitude,
+        userLongitude
+    ) { avail, radius, lat, lon ->
+        SearchFilterState(avail, radius, lat, lon)
+    }
+
     val restaurantsState: StateFlow<List<Restaurant>> = combine(
         repository.restaurants,
         searchQuery,
         selectedCuisine,
-        onlyAvailable
-    ) { list, query, cuisine, avail ->
-        var filtered = list
+        filterStateFlow
+    ) { list, query, cuisine, searchState ->
+        val lat = searchState.lat
+        val lon = searchState.lon
+        val radiusKm = searchState.radiusKm
+        val avail = searchState.onlyAvailable
+
+        var filtered = list.map { r ->
+            val dist = calculateDistance(lat, lon, r.latitude, r.longitude)
+            r.copy(distanceMeters = dist)
+        }
+
+        // Filter by radius (convert km to meters)
+        val radiusMeters = radiusKm * 1000
+        filtered = filtered.filter { it.distanceMeters <= radiusMeters }
+
         if (query.isNotEmpty()) {
             filtered = filtered.filter {
                 it.name.contains(query, ignoreCase = true) ||
@@ -52,16 +81,31 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                         it.address.contains(query, ignoreCase = true)
             }
         }
-        if (cuisine != null) {
+        if (cuisine != null && cuisine != "Все") {
             filtered = filtered.filter { it.cuisines.contains(cuisine) }
         }
         var sortedResult = filtered
         if (avail) {
             // Sort available first, but always keep all of them in the list (even closed/with 0 available tables)
             sortedResult = sortedResult.sortedWith(compareByDescending<Restaurant> { it.availableTables > 0 })
+        } else {
+            sortedResult = sortedResult.sortedBy { it.distanceMeters }
         }
         sortedResult
     }.stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = emptyList())
+
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Int {
+        val r = 6371000 // Earth's radius in meters
+        val phi1 = Math.toRadians(lat1)
+        val phi2 = Math.toRadians(lat2)
+        val deltaPhi = Math.toRadians(lat2 - lat1)
+        val deltaLambda = Math.toRadians(lon2 - lon1)
+        val a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                Math.cos(phi1) * Math.cos(phi2) *
+                Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2)
+        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+        return (r * c).toInt()
+    }
 
     val reservationsState: StateFlow<List<Reservation>> = repository.reservations
         .stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = emptyList())
