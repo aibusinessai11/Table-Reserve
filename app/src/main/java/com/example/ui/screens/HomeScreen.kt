@@ -49,6 +49,7 @@ fun HomeScreen(
     val onlyAvailable by viewModel.onlyAvailable.collectAsState()
     val userLocationName by viewModel.userLocationName.collectAsState()
     val isLoading by viewModel.isLoadingRestaurants.collectAsState()
+    val searchRadiusKm by viewModel.searchRadiusKm.collectAsState()
 
     val cuisinesList = listOf("Все", "Итальянская", "Паназиатская", "Французская", "Веганская", "Американская", "Кето")
 
@@ -179,6 +180,63 @@ fun HomeScreen(
                             label = { Text(cuisine) },
                             shape = RoundedCornerShape(24.dp)
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Search Radius Selector (10, 20, 30, 50 km)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "РАДИУС ПОИСКА ЗАВЕДЕНИЙ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "$searchRadiusKm км",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        listOf(10, 20, 30, 50).forEach { radius ->
+                            val isSelected = searchRadiusKm == radius
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.changeSearchRadius(radius) },
+                                label = { Text("$radius км") },
+                                shape = RoundedCornerShape(24.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("radius_chip_$radius"),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
                     }
                 }
 

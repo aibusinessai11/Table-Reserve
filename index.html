@@ -144,6 +144,9 @@
       // Simulated SQLite/Room database in LocalStorage
       let DEFAULT_RESTAURANTS = [];
       let isWebLoadingRestaurants = true;
+      let selectedSearchRadius = parseInt(localStorage.getItem("search_radius") || "10"); // Default 10km
+      let userSavedLat = parseFloat(localStorage.getItem("user_saved_lat") || "55.7512");
+      let userSavedLon = parseFloat(localStorage.getItem("user_saved_lon") || "37.6184");
 
       const REWARDS = [
         { id: "coffee", name: "Бесплатный Кофе", price: 150, description: "Свежесваренный капучино или американо", icon: "local_cafe" },
@@ -271,6 +274,19 @@
             <button onclick="filterCategory('Asian')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Asian' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Азиатская</button>
             <button onclick="filterCategory('French')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'French' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Французская</button>
             <button onclick="filterCategory('Grill')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Grill' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Гриль</button>
+          </div>
+          <!-- Radius Selector -->
+          <div class="flex flex-col gap-1.5 mt-1">
+            <div class="flex justify-between items-center text-[10px] text-[#49454F] font-bold uppercase tracking-wider">
+              <span>Радиус поиска:</span>
+              <span class="text-[#6750A4] font-black font-mono bg-[#EADDFF] px-2 py-0.5 rounded-full">${selectedSearchRadius} км</span>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="changeSearchRadius(10)" class="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all border ${selectedSearchRadius === 10 ? 'bg-[#6750A4] text-white border-[#6750A4] shadow' : 'bg-[#F3EDF7] border-slate-300 text-[#49454F] hover:bg-[#EADDFF]' }">10 км</button>
+              <button onclick="changeSearchRadius(20)" class="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all border ${selectedSearchRadius === 20 ? 'bg-[#6750A4] text-white border-[#6750A4] shadow' : 'bg-[#F3EDF7] border-slate-300 text-[#49454F] hover:bg-[#EADDFF]' }">20 км</button>
+              <button onclick="changeSearchRadius(30)" class="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all border ${selectedSearchRadius === 30 ? 'bg-[#6750A4] text-white border-[#6750A4] shadow' : 'bg-[#F3EDF7] border-slate-300 text-[#49454F] hover:bg-[#EADDFF]' }">30 км</button>
+              <button onclick="changeSearchRadius(50)" class="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all border ${selectedSearchRadius === 50 ? 'bg-[#6750A4] text-white border-[#6750A4] shadow' : 'bg-[#F3EDF7] border-slate-300 text-[#49454F] hover:bg-[#EADDFF]' }">50 км</button>
+            </div>
           </div>
         `;
         container.appendChild(searchDiv);
@@ -905,11 +921,16 @@
       }
 
       async function fetchWebNearbyRestaurants(lat, lon) {
+        userSavedLat = lat;
+        userSavedLon = lon;
+        localStorage.setItem("user_saved_lat", lat.toString());
+        localStorage.setItem("user_saved_lon", lon.toString());
         try {
           isWebLoadingRestaurants = true;
           renderActiveScreen();
-          // Query OSM Overpass API to get 30 real restaurants, cafes, bars, pubs etc in 3km area
-          const overpassQuery = `[out:json];(nwr["amenity"~"restaurant|cafe|bar|pub|fast_food"](around:3000,${lat},${lon}););out center 30;`;
+          // Query OSM Overpass API dynamically based on desired search radius
+          const radiusMeters = selectedSearchRadius * 1000;
+          const overpassQuery = `[out:json];(nwr["amenity"~"restaurant|cafe|bar|pub|fast_food"](around:${radiusMeters},${lat},${lon}););out center 120;`;
           const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
           if (!res.ok) {
             isWebLoadingRestaurants = false;
@@ -1018,6 +1039,13 @@
         }
         showToast(`Определено местоположение: ${city}, ${country}`);
       }
+
+      window.changeSearchRadius = function(radius) {
+        selectedSearchRadius = radius;
+        localStorage.setItem("search_radius", radius.toString());
+        showToast(`Радиус поиска изменен на ${radius} км`);
+        fetchWebNearbyRestaurants(userSavedLat, userSavedLon);
+      };
 
       // Initial Bootstrap launch sequence
       renderActiveScreen();

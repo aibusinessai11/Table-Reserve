@@ -18,6 +18,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     val searchQuery = MutableStateFlow("")
     val selectedCuisine = MutableStateFlow<String?>(null)
     val onlyAvailable = MutableStateFlow(false)
+    val searchRadiusKm = MutableStateFlow(10) // default 10 km (options: 10, 20, 30, 50)
 
     // User's virtual location
     val userLatitude = MutableStateFlow(55.7512)
@@ -88,13 +89,19 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
         userLocationName.value = name
     }
 
+    fun changeSearchRadius(radiusKm: Int) {
+        searchRadiusKm.value = radiusKm
+        fetchRealNearbyRestaurants(userLatitude.value, userLongitude.value)
+    }
+
     fun fetchRealNearbyRestaurants(lat: Double, lon: Double) {
         isLoadingRestaurants.value = true
         viewModelScope.launch {
             try {
                 val client = OkHttpClient()
-                // Fetch restaurants, cafes, bars, pubs etc near the location within 3000 meters. Limit 30 results
-                val overpassQuery = "[out:json];(nwr[\"amenity\"~\"restaurant|cafe|bar|pub|fast_food\"](around:3000,$lat,$lon););out center 30;"
+                val radiusM = searchRadiusKm.value * 1000
+                // Fetch restaurants, cafes, bars, pubs etc near the location within selected radius. Limit 120 results
+                val overpassQuery = "[out:json];(nwr[\"amenity\"~\"restaurant|cafe|bar|pub|fast_food\"](around:$radiusM,$lat,$lon););out center 120;"
                 val request = Request.Builder()
                     .url("https://overpass-api.de/api/interpreter?data=${java.net.URLEncoder.encode(overpassQuery, "UTF-8")}")
                     .build()
