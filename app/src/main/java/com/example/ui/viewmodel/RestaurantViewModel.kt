@@ -245,9 +245,32 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                 if (realRestaurants.isNotEmpty()) {
                     val sorted = realRestaurants.sortedBy { it.distanceMeters }
                     repository.updateRestaurants(sorted)
+                } else {
+                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
+                        val offsetLat = (idx - 3) * 0.005 + 0.003
+                        val offsetLon = (idx - 3) * 0.005 - 0.003
+                        r.copy(
+                            latitude = lat + offsetLat,
+                            longitude = lon + offsetLon
+                        )
+                    }
+                    repository.updateRestaurants(fallback)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                try {
+                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
+                        val offsetLat = (idx - 3) * 0.005 + 0.003
+                        val offsetLon = (idx - 3) * 0.005 - 0.003
+                        r.copy(
+                            latitude = lat + offsetLat,
+                            longitude = lon + offsetLon
+                        )
+                    }
+                    repository.updateRestaurants(fallback)
+                } catch (dbEx: Exception) {
+                    dbEx.printStackTrace()
+                }
             } finally {
                 isLoadingRestaurants.value = false
             }
@@ -275,6 +298,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
 
     fun fetchGeoLocationByIp() {
         viewModelScope.launch {
+            var success = false
             try {
                 val client = OkHttpClient()
                 val request = Request.Builder()
@@ -298,12 +322,18 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     userLocationName.value = "$city, $country"
                                     fetchRealNearbyRestaurants(lat, lon)
                                 }
+                                success = true
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+            if (!success) {
+                withContext(Dispatchers.Main) {
+                    fetchRealNearbyRestaurants(userLatitude.value, userLongitude.value)
+                }
             }
         }
     }
