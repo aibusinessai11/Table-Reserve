@@ -908,8 +908,8 @@
         try {
           isWebLoadingRestaurants = true;
           renderActiveScreen();
-          // Query OSM Overpass API to get 15 real restaurants & cafes in 3km area
-          const overpassQuery = `[out:json];(node["amenity"="restaurant"](around:3000,${lat},${lon});node["amenity"="cafe"](around:3000,${lat},${lon}););out 15;`;
+          // Query OSM Overpass API to get 30 real restaurants, cafes, bars, pubs etc in 3km area
+          const overpassQuery = `[out:json];(nwr["amenity"~"restaurant|cafe|bar|pub|fast_food"](around:3000,${lat},${lon}););out center 30;`;
           const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
           if (!res.ok) {
             isWebLoadingRestaurants = false;
@@ -960,7 +960,11 @@
 
             data.elements.forEach((elem, idx) => {
               if (elem.tags && elem.tags.name) {
-                const distM = Math.round(calculateDistanceJs(lat, lon, elem.lat, elem.lon));
+                const elemLat = elem.lat || (elem.center && elem.center.lat);
+                const elemLon = elem.lon || (elem.center && elem.center.lon);
+                if (!elemLat || !elemLon) return;
+
+                const distM = Math.round(calculateDistanceJs(lat, lon, elemLat, elemLon));
                 const distText = distM < 1000 ? `${distM}м` : `${(distM / 1000).toFixed(1)}км`;
                 const walkTime = Math.max(1, Math.round(distM / 80)); // ~80m/min
                 const img = imagePool[idx % imagePool.length];
@@ -982,8 +986,8 @@
                   timeWalk: `${walkTime} мин`,
                   freeTables: freeT,
                   tags: tagNames,
-                  lat: elem.lat,
-                  lon: elem.lon,
+                  lat: elemLat,
+                  lon: elemLon,
                   address: elem.tags["addr:street"] ? `ул. ${elem.tags["addr:street"]}, ${elem.tags["addr:housenumber"] || ""}` : "В районе вашей геолокации"
                 });
               }

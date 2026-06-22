@@ -74,16 +74,11 @@ fun RestaurantDetailScreen(
     // Interactive custom tables layout (8 tables)
     // Table model: number, seats count, isAvailable
     // Deterministic layout based on restaurant ID
-    val seatingList = remember(r.id) {
-        val seed = r.id.hashCode()
+    val seatingList = remember(r.id, r.availableTables) {
         List(8) { index ->
             val number = index + 1
             val seats = if (index % 3 == 0) 4 else if (index % 4 == 0) 6 else 2
-            // Last few tables might be booked depending on availableTables count
-            val isAvailable = if (r.availableTables == 0) false else {
-                val sumOfAvails = (seed + index) % 10
-                sumOfAvails % 2 == 0 && index < r.availableTables * 2
-            }
+            val isAvailable = index < r.availableTables
             SeatingTable(number, seats, isAvailable)
         }
     }

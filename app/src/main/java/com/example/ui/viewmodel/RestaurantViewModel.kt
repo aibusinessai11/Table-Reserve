@@ -91,8 +91,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
         viewModelScope.launch {
             try {
                 val client = OkHttpClient()
-                // Fetch restaurants and cafes near the location within 3000 meters. Limit 15 results
-                val overpassQuery = "[out:json];(node[\"amenity\"=\"restaurant\"](around:3000,$lat,$lon);node[\"amenity\"=\"cafe\"](around:3000,$lat,$lon););out 15;"
+                // Fetch restaurants, cafes, bars, pubs etc near the location within 3000 meters. Limit 30 results
+                val overpassQuery = "[out:json];(nwr[\"amenity\"~\"restaurant|cafe|bar|pub|fast_food\"](around:3000,$lat,$lon););out center 30;"
                 val request = Request.Builder()
                     .url("https://overpass-api.de/api/interpreter?data=${java.net.URLEncoder.encode(overpassQuery, "UTF-8")}")
                     .build()
@@ -118,8 +118,20 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     )
                                     for (i in 0 until elements.length()) {
                                         val elem = elements.getJSONObject(i)
-                                        val nodeLat = elem.optDouble("lat", lat)
-                                        val nodeLon = elem.optDouble("lon", lon)
+                                        var nodeLat = elem.optDouble("lat", Double.NaN)
+                                        var nodeLon = elem.optDouble("lon", Double.NaN)
+                                        if (nodeLat.isNaN() || nodeLon.isNaN()) {
+                                            val centerObj = elem.optJSONObject("center")
+                                            if (centerObj != null) {
+                                                nodeLat = centerObj.optDouble("lat")
+                                                nodeLon = centerObj.optDouble("lon")
+                                            }
+                                        }
+                                        if (nodeLat.isNaN() || nodeLon.isNaN()) {
+                                            nodeLat = lat
+                                            nodeLon = lon
+                                        }
+
                                         val idVal = elem.optLong("id")
                                         val tags = elem.optJSONObject("tags") ?: continue
                                         val rawName = tags.optString("name")
