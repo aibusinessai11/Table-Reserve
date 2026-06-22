@@ -27,6 +27,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     // Route Mode
     val isDrivingMode = MutableStateFlow(false) // false = Walk, true = Drive
 
+    val isLoadingRestaurants = MutableStateFlow(false)
+
     // Active restaurant for detail/route view
     val selectedRestaurant = MutableStateFlow<Restaurant?>(null)
 
@@ -85,6 +87,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     }
 
     fun fetchRealNearbyRestaurants(lat: Double, lon: Double) {
+        isLoadingRestaurants.value = true
         viewModelScope.launch {
             try {
                 val client = OkHttpClient()
@@ -177,24 +180,11 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                 if (realRestaurants.isNotEmpty()) {
                     val sorted = realRestaurants.sortedBy { it.distanceMeters }
                     repository.updateRestaurants(sorted)
-                } else {
-                    // Fallback: If Overpass API is empty or failed, update mock restaurant distances relative to new location
-                    val currentList = repository.restaurants.first()
-                    val updatedMockList = currentList.map { mockRest ->
-                        val distResults = FloatArray(1)
-                        try {
-                            android.location.Location.distanceBetween(lat, lon, mockRest.latitude, mockRest.longitude, distResults)
-                        } catch (e: Exception) {
-                            distResults[0] = (Math.sqrt(Math.pow(mockRest.latitude - lat, 2.0) + Math.pow(mockRest.longitude - lon, 2.0)) * 111000).toFloat()
-                        }
-                        mockRest.copy(distanceMeters = distResults[0].toInt())
-                    }
-                    if (updatedMockList.isNotEmpty()) {
-                        repository.updateRestaurants(updatedMockList)
-                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                isLoadingRestaurants.value = false
             }
         }
     }

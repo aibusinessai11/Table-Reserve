@@ -32,11 +32,6 @@ class RestaurantRepository(private val appDao: AppDao) {
         if (isSeeded) return@withContext
         seedMutex.withLock {
             if (isSeeded) return@withLock
-            // Seed Restaurants if empty
-            val list = appDao.getAllRestaurants().first()
-            if (list.isEmpty()) {
-                appDao.insertRestaurants(Restaurant.getMockRestaurants())
-            }
             // Seed Loyalty profile
             val profile = appDao.getLoyaltyProfile()
             if (profile == null) {

@@ -48,6 +48,7 @@ fun HomeScreen(
     val selectedCuisine by viewModel.selectedCuisine.collectAsState()
     val onlyAvailable by viewModel.onlyAvailable.collectAsState()
     val userLocationName by viewModel.userLocationName.collectAsState()
+    val isLoading by viewModel.isLoadingRestaurants.collectAsState()
 
     val cuisinesList = listOf("Все", "Итальянская", "Паназиатская", "Французская", "Веганская", "Американская", "Кето")
 
@@ -312,7 +313,39 @@ fun HomeScreen(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 
-            if (restaurants.isEmpty()) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Поиск реальных ресторанов поблизости...",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Определяем вашу геолокацию и загружаем заведения OpenStreetMap в радиусе 3 км",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else if (restaurants.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

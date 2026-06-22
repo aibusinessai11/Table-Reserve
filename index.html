@@ -142,14 +142,8 @@
     <!-- Script Zone for 100% interactive database and application states -->
     <script>
       // Simulated SQLite/Room database in LocalStorage
-      let DEFAULT_RESTAURANTS = [
-        { id: 1, name: "The Rustic Olive", cuisine: "Итальянская", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60", rating: 4.8, reviews: "1.2k", distance: "250м", timeWalk: "4 мин", freeTables: 2, tags: ["Italian", "Highest Rated"] },
-        { id: 2, name: "Ginger & Soy", cuisine: "Азиатская", image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60", rating: 4.6, reviews: "850", distance: "450м", timeWalk: "7 мин", freeTables: 4, tags: ["Asian"] },
-        { id: 3, name: "La Parisienne", cuisine: "Французская", image: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=500&auto=format&fit=crop&q=60", rating: 4.9, reviews: "1.5k", distance: "600м", timeWalk: "9 мин", freeTables: 1, tags: ["French", "Highest Rated"] },
-        { id: 4, name: "Steak & Fire", cuisine: "Гриль", image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60", rating: 4.7, reviews: "920", distance: "800м", timeWalk: "12 мин", freeTables: 3, tags: ["Grill"] },
-        { id: 5, name: "El Sombrero", cuisine: "Мексиканская", image: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=500&auto=format&fit=crop&q=60", rating: 4.5, reviews: "640", distance: "1.1км", timeWalk: "15 мин", freeTables: 5, tags: ["Mexican"] },
-        { id: 6, name: "Mamma Mia", cuisine: "Пиццерия", image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&auto=format&fit=crop&q=60", rating: 4.4, reviews: "1.1k", distance: "1.3км", timeWalk: "18 мин", freeTables: 3, tags: ["Italian"] }
-      ];
+      let DEFAULT_RESTAURANTS = [];
+      let isWebLoadingRestaurants = true;
 
       const REWARDS = [
         { id: "coffee", name: "Бесплатный Кофе", price: 150, description: "Свежесваренный капучино или американо", icon: "local_cafe" },
@@ -311,14 +305,24 @@
         // Listing Title
         const listHeader = document.createElement("div");
         listHeader.className = "flex justify-between items-center";
-        listHeader.innerHTML = `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Все свободные столики (${filtered.length})</span>`;
+        listHeader.innerHTML = isWebLoadingRestaurants 
+          ? `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Идет поиск заведений...</span>`
+          : `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Все свободные столики (${filtered.length})</span>`;
         container.appendChild(listHeader);
 
         // Cards list
         const listDiv = document.createElement("div");
         listDiv.className = "flex flex-col gap-4";
 
-        if (filtered.length === 0) {
+        if (isWebLoadingRestaurants) {
+          listDiv.innerHTML = `
+            <div class="py-12 text-center text-[#49454F] flex flex-col items-center justify-center gap-3">
+              <div class="w-10 h-10 border-4 border-[#6750A4] border-t-transparent rounded-full animate-spin"></div>
+              <p class="text-sm font-bold mt-2 text-[#1D1B20]">Поиск реальных ресторанов поблизости...</p>
+              <p class="text-xs text-stone-500 max-w-[280px]">Определяем ваше положение и загружаем настоящие заведения OpenStreetMap в радиусе 3 км</p>
+            </div>
+          `;
+        } else if (filtered.length === 0) {
           listDiv.innerHTML = `
             <div class="py-12 text-center text-[#49454F]">
               <span class="material-symbols-outlined text-4xl mb-2 opacity-50">search_off</span>
@@ -902,10 +906,16 @@
 
       async function fetchWebNearbyRestaurants(lat, lon) {
         try {
+          isWebLoadingRestaurants = true;
+          renderActiveScreen();
           // Query OSM Overpass API to get 15 real restaurants & cafes in 3km area
           const overpassQuery = `[out:json];(node["amenity"="restaurant"](around:3000,${lat},${lon});node["amenity"="cafe"](around:3000,${lat},${lon}););out 15;`;
           const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
-          if (!res.ok) return;
+          if (!res.ok) {
+            isWebLoadingRestaurants = false;
+            renderActiveScreen();
+            return;
+          }
           const data = await res.json();
           if (data && data.elements && data.elements.length > 0) {
             const list = [];
@@ -987,11 +997,13 @@
               });
               DEFAULT_RESTAURANTS.length = 0;
               list.forEach(item => DEFAULT_RESTAURANTS.push(item));
-              renderActiveScreen();
             }
           }
         } catch (e) {
           console.error("OSM loading failed on web:", e);
+        } finally {
+          isWebLoadingRestaurants = false;
+          renderActiveScreen();
         }
       }
 
