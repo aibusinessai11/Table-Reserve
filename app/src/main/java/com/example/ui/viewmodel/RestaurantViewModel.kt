@@ -54,10 +54,12 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
         if (cuisine != null) {
             filtered = filtered.filter { it.cuisines.contains(cuisine) }
         }
+        var sortedResult = filtered
         if (avail) {
-            filtered = filtered.filter { it.availableTables > 0 }
+            // Sort available first, but always keep all of them in the list (even closed/with 0 available tables)
+            sortedResult = sortedResult.sortedWith(compareByDescending<Restaurant> { it.availableTables > 0 })
         }
-        filtered
+        sortedResult
     }.stateIn(scope = viewModelScope, started = SharingStarted.WhileSubscribed(5000), initialValue = emptyList())
 
     val reservationsState: StateFlow<List<Reservation>> = repository.reservations
@@ -159,7 +161,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                         val rRating = ((43..49).random() / 10.0)
                                         val rBill = (8..28).random() * 100
                                         val rTables = (10..22).random()
-                                        val avTables = (1..6).random()
+                                        val avTables = (0..6).random()
                                         val img = imagePool[i % imagePool.size]
 
                                         list.add(

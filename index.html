@@ -339,8 +339,8 @@
                   <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                     <span class="bg-[#C4E7FF] text-[#001E2F] px-2 py-0.5 rounded text-[9px] font-bold tracking-wider">ТОП ВЫБОР</span>
                     <span class="text-[#B3261E] text-[10px] font-bold flex items-center gap-1">
-                      <span class="w-1.5 h-1.5 bg-[#B3261E] rounded-full animate-ping"></span>
-                      ${res.freeTables} СТОЛА СВОБОДНО
+                      <span class="w-1.5 h-1.5 bg-[#B3261E] rounded-full ${res.freeTables > 0 ? 'animate-ping' : ''}"></span>
+                      ${res.freeTables > 0 ? `${res.freeTables} СТОЛА СВОБОДНО` : 'МЕСТ НЕТ / ЗАКРЫТО'}
                     </span>
                   </div>
                   <h3 class="text-lg font-bold tracking-tight text-[#1D1B20]">${res.name}</h3>
@@ -443,7 +443,7 @@
           </div>
           <div class="flex justify-between text-xs py-2 border-t border-[#CAC4D0]/30">
             <span class="text-[#49454F]">Свободно сейчас:</span>
-            <span class="font-extrabold text-[#B3261E]">${selectedRestaurant.freeTables} стола</span>
+            <span class="font-extrabold text-[#B3261E]">${selectedRestaurant.freeTables > 0 ? `${selectedRestaurant.freeTables} стола` : 'Мест нет (закрыто)'}</span>
           </div>
         `;
         container.appendChild(infoDiv);
@@ -970,7 +970,7 @@
                 const img = imagePool[idx % imagePool.length];
                 const rating = (4.3 + Math.random() * 0.6).toFixed(1);
                 const reviews = Math.floor(50 + Math.random() * 950).toString();
-                const freeT = Math.floor(1 + Math.random() * 6);
+                const freeT = Math.floor(Math.random() * 7);
                 
                 const tagNames = [mapCuisineJs(elem.tags.cuisine)];
                 if (parseFloat(rating) >= 4.7) tagNames.push("Рекомендуем");
