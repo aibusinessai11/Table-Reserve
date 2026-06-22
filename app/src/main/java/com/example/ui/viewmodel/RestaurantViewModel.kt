@@ -102,15 +102,17 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
             }
         }
 
-        if (query.isNotEmpty()) {
+        val trimmedQuery = query.trim()
+        if (trimmedQuery.isNotEmpty()) {
             filtered = filtered.filter {
-                it.name.contains(query, ignoreCase = true) ||
-                        it.cuisines.contains(query, ignoreCase = true) ||
-                        it.address.contains(query, ignoreCase = true)
+                it.name.contains(trimmedQuery, ignoreCase = true) ||
+                        it.cuisines.contains(trimmedQuery, ignoreCase = true) ||
+                        it.address.contains(trimmedQuery, ignoreCase = true) ||
+                        it.description.contains(trimmedQuery, ignoreCase = true)
             }
         }
         if (cuisine != null && cuisine != "Все") {
-            filtered = filtered.filter { it.cuisines.contains(cuisine) }
+            filtered = filtered.filter { it.cuisines.contains(cuisine, ignoreCase = true) }
         }
         var sortedResult = filtered
         if (avail) {

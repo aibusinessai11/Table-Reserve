@@ -261,7 +261,7 @@
       }
 
       function searchRestaurant(val) {
-        searchKeyword = val.toLowerCase();
+        searchKeyword = val;
         renderActiveScreen();
       }
 
@@ -278,6 +278,11 @@
 
       // Screen Compilation Mechanics
       function renderActiveScreen() {
+        const activeEl = document.activeElement;
+        const isSearchFocused = activeEl && activeEl.placeholder === "Поиск ресторанов, блюд...";
+        const selStart = isSearchFocused ? activeEl.selectionStart : 0;
+        const selEnd = isSearchFocused ? activeEl.selectionEnd : 0;
+
         const container = document.getElementById("screen-container");
         container.innerHTML = ""; // reset
 
@@ -291,6 +296,18 @@
           renderReservationsScreen(container);
         } else if (currentScreen === "loyalty") {
           renderLoyaltyScreen(container);
+        }
+
+        if (isSearchFocused) {
+          const newActiveEl = document.querySelector('input[placeholder="Поиск ресторанов, блюд..."]');
+          if (newActiveEl) {
+            newActiveEl.focus();
+            try {
+              newActiveEl.setSelectionRange(selStart, selEnd);
+            } catch (e) {
+              console.warn("Could not set selection range", e);
+            }
+          }
         }
       }
 
@@ -362,9 +379,27 @@
         container.appendChild(mapDiv);
 
         // Filter algorithm
+        const queryLower = searchKeyword.trim().toLowerCase();
         const filtered = DEFAULT_RESTAURANTS.filter(res => {
-          const matchKeyword = res.name.toLowerCase().includes(searchKeyword) || res.cuisine.toLowerCase().includes(searchKeyword);
-          const matchCategory = activeFilter === "all" || res.tags.includes(activeFilter);
+          const matchKeyword = !queryLower || 
+                               res.name.toLowerCase().includes(queryLower) || 
+                               res.cuisine.toLowerCase().includes(queryLower) ||
+                               (res.address && res.address.toLowerCase().includes(queryLower)) ||
+                               (res.description && res.description.toLowerCase().includes(queryLower));
+
+          let matchCategory = activeFilter === "all" || res.tags.includes(activeFilter);
+          if (!matchCategory && activeFilter !== "all") {
+            const trans = {
+              "Italian": ["Итальянская", "Italian"],
+              "Asian": ["Азиатская", "Паназиатская", "Asian"],
+              "French": ["Французская", "French"],
+              "Grill": ["Гриль", "Grill", "Гриль-бар"],
+              "Cafe": ["Кафе", "Cafe"]
+            };
+            const possibleTags = trans[activeFilter] || [activeFilter];
+            matchCategory = res.tags.some(t => possibleTags.includes(t)) || possibleTags.includes(res.cuisine);
+          }
+
           if (window.onlyGoogleSavedPlaces) {
             if (window.isGoogleConnected) {
               return matchKeyword && matchCategory && res.isGoogleSaved;
