@@ -93,7 +93,7 @@
                 </div>
                 <div class="flex flex-col">
                   <span class="text-[9px] text-[#49454F] font-bold uppercase tracking-wider">Рядом в</span>
-                  <span class="text-xs font-bold flex items-center gap-0.5 text-[#1D1B20]">Москва, РФ <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span></span>
+                  <span class="text-xs font-bold flex items-center gap-0.5 text-[#1D1B20]" id="user-location-text">Москва, РФ <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span></span>
                 </div>
               </div>
               <div class="w-9 h-9 rounded-full border border-[#CAC4D0] flex items-center justify-center cursor-pointer hover:bg-[#F3EDF7]">
@@ -859,8 +859,53 @@
         renderActiveScreen();
       };
 
+      async function detectUserLocation() {
+        // 1. Silent IP fallback first to get immediate results without blocking
+        try {
+          const res = await fetch('https://ipapi.co/json/');
+          const data = await res.json();
+          if (data && data.city) {
+            updateLocationDisplay(data.city, data.country_name || "РФ");
+          }
+        } catch (e) {
+          console.log("IP lookup failed, trying navigator.geolocation", e);
+        }
+
+        // 2. High-precision browser geolocation if permission is granted
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+              const lat = position.coords.latitude;
+              const lon = position.coords.longitude;
+              const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ru`);
+              const geoData = await geoRes.json();
+              if (geoData && geoData.address) {
+                const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.suburb || geoData.address.state;
+                const country = geoData.address.country || "РФ";
+                if (city) {
+                  updateLocationDisplay(city, country);
+                }
+              }
+            } catch (err) {
+              console.error("Geocoding failed", err);
+            }
+          }, (err) => {
+            console.warn("User denied geolocation permission", err);
+          });
+        }
+      }
+
+      function updateLocationDisplay(city, country) {
+        const el = document.getElementById("user-location-text");
+        if (el) {
+          el.innerHTML = `${city}, ${country} <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span>`;
+        }
+        showToast(`Определено местоположение: ${city}, ${country}`);
+      }
+
       // Initial Bootstrap launch sequence
       renderActiveScreen();
+      detectUserLocation();
     </script>
   </body>
 </html>

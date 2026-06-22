@@ -6,6 +6,11 @@ import com.example.data.*
 import com.example.repository.RestaurantRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 
 class RestaurantViewModel(private val repository: RestaurantRepository) : ViewModel() {
 
@@ -14,9 +19,10 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     val selectedCuisine = MutableStateFlow<String?>(null)
     val onlyAvailable = MutableStateFlow(false)
 
-    // User's virtual location (Center of Moscow for demo)
+    // User's virtual location
     val userLatitude = MutableStateFlow(55.7512)
     val userLongitude = MutableStateFlow(37.6184)
+    val userLocationName = MutableStateFlow("Москва, Россия")
 
     // Route Mode
     val isDrivingMode = MutableStateFlow(false) // false = Walk, true = Drive
@@ -64,6 +70,83 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     init {
         viewModelScope.launch {
             repository.ensureSeeded()
+        }
+        fetchGeoLocationByIp()
+    }
+
+    fun updateLocation(lat: Double, lon: Double) {
+        userLatitude.value = lat
+        userLongitude.value = lon
+    }
+
+    fun updateLocationName(name: String) {
+        userLocationName.value = name
+    }
+
+    fun fetchGeoLocationByIp() {
+        viewModelScope.launch {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://ipapi.co/json/")
+                    .build()
+                
+                withContext(Dispatchers.IO) {
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyString = response.body?.string()
+                            if (!bodyString.isNullOrEmpty()) {
+                                val json = JSONObject(bodyString)
+                                val city = json.optString("city", "Москва")
+                                val country = json.optString("country_name", "Россия")
+                                val lat = json.optDouble("latitude", 55.7512)
+                                val lon = json.optDouble("longitude", 37.6184)
+                                
+                                withContext(Dispatchers.Main) {
+                                    userLatitude.value = lat
+                                    userLongitude.value = lon
+                                    userLocationName.value = "$city, $country"
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun fetchCityNameFromCoordinates(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&accept-language=ru")
+                    .header("User-Agent", "TableReserveAndroid")
+                    .build()
+                
+                withContext(Dispatchers.IO) {
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyString = response.body?.string()
+                            if (!bodyString.isNullOrEmpty()) {
+                                val json = JSONObject(bodyString)
+                                val address = json.optJSONObject("address")
+                                if (address != null) {
+                                    val city = address.optString("city", address.optString("town", address.optString("village", address.optString("state", "Мой Город"))))
+                                    val country = address.optString("country", "Россия")
+                                    withContext(Dispatchers.Main) {
+                                        userLocationName.value = "$city, $country"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

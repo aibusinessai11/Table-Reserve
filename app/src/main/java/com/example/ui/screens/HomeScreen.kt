@@ -47,6 +47,7 @@ fun HomeScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val selectedCuisine by viewModel.selectedCuisine.collectAsState()
     val onlyAvailable by viewModel.onlyAvailable.collectAsState()
+    val userLocationName by viewModel.userLocationName.collectAsState()
 
     val cuisinesList = listOf("Все", "Итальянская", "Паназиатская", "Французская", "Веганская", "Американская", "Кето")
 
@@ -93,7 +94,7 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Москва, Россия",
+                                    text = userLocationName,
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground
