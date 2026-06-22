@@ -242,35 +242,11 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                     }
                 }
 
-                if (realRestaurants.isNotEmpty()) {
-                    val sorted = realRestaurants.sortedBy { it.distanceMeters }
-                    repository.updateRestaurants(sorted)
-                } else {
-                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
-                        val offsetLat = (idx - 3) * 0.005 + 0.003
-                        val offsetLon = (idx - 3) * 0.005 - 0.003
-                        r.copy(
-                            latitude = lat + offsetLat,
-                            longitude = lon + offsetLon
-                        )
-                    }
-                    repository.updateRestaurants(fallback)
-                }
+                val sorted = realRestaurants.sortedBy { it.distanceMeters }
+                repository.updateRestaurants(sorted)
             } catch (e: Exception) {
                 e.printStackTrace()
-                try {
-                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
-                        val offsetLat = (idx - 3) * 0.005 + 0.003
-                        val offsetLon = (idx - 3) * 0.005 - 0.003
-                        r.copy(
-                            latitude = lat + offsetLat,
-                            longitude = lon + offsetLon
-                        )
-                    }
-                    repository.updateRestaurants(fallback)
-                } catch (dbEx: Exception) {
-                    dbEx.printStackTrace()
-                }
+                repository.updateRestaurants(emptyList())
             } finally {
                 isLoadingRestaurants.value = false
             }

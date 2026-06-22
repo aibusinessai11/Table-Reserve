@@ -22,8 +22,8 @@ class RestaurantRepository(private val appDao: AppDao) {
     val rewards: Flow<List<LoyaltyReward>> = appDao.getAllRewards()
 
     suspend fun updateRestaurants(newList: List<Restaurant>) = withContext(Dispatchers.IO) {
+        appDao.deleteAllRestaurants()
         if (newList.isNotEmpty()) {
-            appDao.deleteAllRestaurants()
             appDao.insertRestaurants(newList)
         }
     }
@@ -41,11 +41,6 @@ class RestaurantRepository(private val appDao: AppDao) {
             val rewardsList = appDao.getAllRewards().first()
             if (rewardsList.isEmpty()) {
                 appDao.insertRewards(LoyaltyReward.getMockRewards())
-            }
-            // Seed restaurants
-            val restaurantsList = appDao.getAllRestaurants().first()
-            if (restaurantsList.isEmpty()) {
-                appDao.insertRestaurants(Restaurant.getMockRestaurants())
             }
             isSeeded = true
         }

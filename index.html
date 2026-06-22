@@ -920,66 +920,6 @@
         }
       }
 
-      function useFallbackWebRestaurants(lat, lon) {
-        const imagePool = [
-          "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60",
-          "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&auto=format&fit=crop&q=60",
-          "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60",
-          "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&auto=format&fit=crop&q=60",
-          "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60",
-          "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&auto=format&fit=crop&q=60"
-        ];
-        const calculateDistanceJs = (lat1, lon1, lat2, lon2) => {
-          const R = 6371; // km
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLon = (lon2 - lon1) * Math.PI / 180;
-          const a = 
-            Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          return R * c * 1000; // in meters
-        };
-
-        const mockTemplates = [
-          { id: "rest_1", name: "The Rustic Olive", cuisine: "Итальянская", address: "ул. Большая Дмитровка, 12", rating: 4.8, freeT: 4, tag: "Итальянская" },
-          { id: "rest_2", name: "Ginger & Soy", cuisine: "Азиатская", address: "Тверской бульвар, 26", rating: 4.6, freeT: 0, tag: "Азиатская" },
-          { id: "rest_3", name: "La Petite Brasserie", cuisine: "Французская", address: "Никитский переулок, 5", rating: 4.7, freeT: 5, tag: "Французская" },
-          { id: "rest_4", name: "The Green Hearth", cuisine: "Вегетарианская", address: "Кузнецкий Мост, 19с1", rating: 4.5, freeT: 3, tag: "Вегетарианская" },
-          { id: "rest_5", name: "Ugly Burger & Diner", cuisine: "Бургеры", address: "Театральный проезд, 3с3", rating: 4.4, freeT: 2, tag: "Бургеры" },
-          { id: "rest_6", name: "Avocado & Friends", cuisine: "Кофейня & Десерты", address: "Петровка, 15", rating: 4.9, freeT: 1, tag: "Кофейня & Десерты" }
-        ];
-
-        DEFAULT_RESTAURANTS.length = 0;
-        mockTemplates.forEach((m, idx) => {
-          const offsetLat = (idx - 3) * 0.005 + 0.003;
-          const offsetLon = (idx - 3) * 0.005 - 0.003;
-          const elemLat = lat + offsetLat;
-          const elemLon = lon + offsetLon;
-          const distM = Math.round(calculateDistanceJs(lat, lon, elemLat, elemLon));
-          const distText = distM < 1000 ? `${distM}м` : `${(distM / 1000).toFixed(1)}км`;
-          const walkTime = Math.max(1, Math.round(distM / 80));
-          const tags = [m.tag];
-          if (m.rating >= 4.7) tags.push("Рекомендуем");
-
-          DEFAULT_RESTAURANTS.push({
-            id: m.id,
-            name: m.name,
-            cuisine: m.cuisine,
-            image: imagePool[idx % imagePool.length],
-            rating: m.rating,
-            reviews: Math.floor(50 + Math.random() * 950).toString(),
-            distance: distText,
-            timeWalk: `${walkTime} мин`,
-            freeTables: m.freeT,
-            tags: tags,
-            lat: elemLat,
-            lon: elemLon,
-            address: m.address
-          });
-        });
-      }
-
       async function fetchWebNearbyRestaurants(lat, lon) {
         userSavedLat = lat;
         userSavedLon = lon;
@@ -993,7 +933,7 @@
           const overpassQuery = `[out:json];(nwr["amenity"~"restaurant|cafe|bar|pub|fast_food"](around:${radiusMeters},${lat},${lon}););out center 120;`;
           const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
           if (!res.ok) {
-            useFallbackWebRestaurants(lat, lon);
+            DEFAULT_RESTAURANTS.length = 0;
             isWebLoadingRestaurants = false;
             renderActiveScreen();
             return;
@@ -1084,14 +1024,14 @@
               DEFAULT_RESTAURANTS.length = 0;
               list.forEach(item => DEFAULT_RESTAURANTS.push(item));
             } else {
-              useFallbackWebRestaurants(lat, lon);
+              DEFAULT_RESTAURANTS.length = 0;
             }
           } else {
-            useFallbackWebRestaurants(lat, lon);
+            DEFAULT_RESTAURANTS.length = 0;
           }
         } catch (e) {
           console.error("OSM loading failed on web:", e);
-          useFallbackWebRestaurants(lat, lon);
+          DEFAULT_RESTAURANTS.length = 0;
         } finally {
           isWebLoadingRestaurants = false;
           renderActiveScreen();
