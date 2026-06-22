@@ -15,6 +15,9 @@ interface AppDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRestaurants(restaurants: List<Restaurant>)
 
+    @Query("DELETE FROM restaurants")
+    suspend fun deleteAllRestaurants()
+
     @Query("UPDATE restaurants SET availableTables = :available WHERE id = :id")
     suspend fun updateAvailableTables(id: String, available: Int)
 

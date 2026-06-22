@@ -21,6 +21,13 @@ class RestaurantRepository(private val appDao: AppDao) {
 
     val rewards: Flow<List<LoyaltyReward>> = appDao.getAllRewards()
 
+    suspend fun updateRestaurants(newList: List<Restaurant>) = withContext(Dispatchers.IO) {
+        if (newList.isNotEmpty()) {
+            appDao.deleteAllRestaurants()
+            appDao.insertRestaurants(newList)
+        }
+    }
+
     suspend fun ensureSeeded() = withContext(Dispatchers.IO) {
         if (isSeeded) return@withContext
         seedMutex.withLock {

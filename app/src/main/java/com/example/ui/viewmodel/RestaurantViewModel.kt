@@ -77,10 +77,145 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     fun updateLocation(lat: Double, lon: Double) {
         userLatitude.value = lat
         userLongitude.value = lon
+        fetchRealNearbyRestaurants(lat, lon)
     }
 
     fun updateLocationName(name: String) {
         userLocationName.value = name
+    }
+
+    fun fetchRealNearbyRestaurants(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            try {
+                val client = OkHttpClient()
+                // Fetch restaurants and cafes near the location within 3000 meters. Limit 15 results
+                val overpassQuery = "[out:json];(node[\"amenity\"=\"restaurant\"](around:3000,$lat,$lon);node[\"amenity\"=\"cafe\"](around:3000,$lat,$lon););out 15;"
+                val request = Request.Builder()
+                    .url("https://overpass-api.de/api/interpreter?data=${java.net.URLEncoder.encode(overpassQuery, "UTF-8")}")
+                    .build()
+
+                val realRestaurants = withContext(Dispatchers.IO) {
+                    client.newCall(request).execute().use { response ->
+                        val list = mutableListOf<Restaurant>()
+                        if (response.isSuccessful) {
+                            val bodyString = response.body?.string()
+                            if (!bodyString.isNullOrEmpty()) {
+                                val json = JSONObject(bodyString)
+                                val elements = json.optJSONArray("elements")
+                                if (elements != null && elements.length() > 0) {
+                                    val imagePool = listOf(
+                                        "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=500&auto=format&fit=crop&q=60",
+                                        "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60"
+                                    )
+                                    for (i in 0 until elements.length()) {
+                                        val elem = elements.getJSONObject(i)
+                                        val nodeLat = elem.optDouble("lat", lat)
+                                        val nodeLon = elem.optDouble("lon", lon)
+                                        val idVal = elem.optLong("id")
+                                        val tags = elem.optJSONObject("tags") ?: continue
+                                        val rawName = tags.optString("name")
+                                        if (rawName.isNullOrEmpty()) continue
+
+                                        val rawCuisine = tags.optString("cuisine", "cafe")
+                                        val cuisineName = mapCuisine(rawCuisine)
+                                        
+                                        val street = tags.optString("addr:street", "")
+                                        val house = tags.optString("addr:housenumber", "")
+                                        val addressStr = if (street.isNotEmpty()) {
+                                            "ул. $street, $house"
+                                        } else {
+                                            "В районе вашего положения"
+                                        }
+
+                                        val distResults = FloatArray(1)
+                                        try {
+                                            android.location.Location.distanceBetween(lat, lon, nodeLat, nodeLon, distResults)
+                                        } catch (e: Exception) {
+                                            distResults[0] = (Math.sqrt(Math.pow(nodeLat - lat, 2.0) + Math.pow(nodeLon - lon, 2.0)) * 111000).toFloat()
+                                        }
+                                        val distance = distResults[0].toInt()
+
+                                        val rRating = ((43..49).random() / 10.0)
+                                        val rBill = (8..28).random() * 100
+                                        val rTables = (10..22).random()
+                                        val avTables = (1..6).random()
+                                        val img = imagePool[i % imagePool.size]
+
+                                        list.add(
+                                            Restaurant(
+                                                id = "osm_$idVal",
+                                                name = rawName,
+                                                cuisines = cuisineName,
+                                                address = addressStr,
+                                                distanceMeters = distance,
+                                                latitude = nodeLat,
+                                                longitude = nodeLon,
+                                                rating = rRating,
+                                                averageBill = rBill,
+                                                totalTables = rTables,
+                                                availableTables = avTables,
+                                                imageUrl = img,
+                                                description = "Аутентичный уголок вкуса поблизости от вас с уютной атмосферой, высоким рейтингом и приветливым персоналом.",
+                                                loyaltyOffer = "Скидка по золотой карте и +50 кешбэк баллов за визит",
+                                                popularity = (82..98).random()
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        list
+                    }
+                }
+
+                if (realRestaurants.isNotEmpty()) {
+                    val sorted = realRestaurants.sortedBy { it.distanceMeters }
+                    repository.updateRestaurants(sorted)
+                } else {
+                    // Fallback: If Overpass API is empty or failed, update mock restaurant distances relative to new location
+                    val currentList = repository.restaurants.first()
+                    val updatedMockList = currentList.map { mockRest ->
+                        val distResults = FloatArray(1)
+                        try {
+                            android.location.Location.distanceBetween(lat, lon, mockRest.latitude, mockRest.longitude, distResults)
+                        } catch (e: Exception) {
+                            distResults[0] = (Math.sqrt(Math.pow(mockRest.latitude - lat, 2.0) + Math.pow(mockRest.longitude - lon, 2.0)) * 111000).toFloat()
+                        }
+                        mockRest.copy(distanceMeters = distResults[0].toInt())
+                    }
+                    if (updatedMockList.isNotEmpty()) {
+                        repository.updateRestaurants(updatedMockList)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun mapCuisine(cuisineTag: String): String {
+        val tag = cuisineTag.lowercase()
+        return when {
+            tag.contains("italian") || tag.contains("pizza") || tag.contains("pasta") -> "Итальянская кухня"
+            tag.contains("asian") || tag.contains("japanese") || tag.contains("sushi") || tag.contains("chinese") -> "Паназиатская кухня"
+            tag.contains("french") -> "Французская кухня"
+            tag.contains("burger") || tag.contains("american") || tag.contains("fast_food") -> "Американская кухня"
+            tag.contains("cafe") || tag.contains("coffee") || tag.contains("bakery") || tag.contains("tea") -> "Кофейня • Десерты"
+            tag.contains("german") || tag.contains("beer") -> "Баварский паб"
+            tag.contains("georgian") -> "Грузинская кухня"
+            tag.contains("russian") -> "Русская кухня"
+            tag.contains("grill") || tag.contains("steak") || tag.contains("meat") || tag.contains("bbq") -> "Гриль • Стейк-хаус"
+            tag.contains("mexican") -> "Мексиканская кухня"
+            tag.contains("vietnamese") -> "Вьетнамская кухня"
+            tag.contains("turkish") || tag.contains("kebab") -> "Турецкая кухня"
+            else -> "Европейская кухня"
+        }
     }
 
     fun fetchGeoLocationByIp() {
@@ -106,6 +241,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     userLatitude.value = lat
                                     userLongitude.value = lon
                                     userLocationName.value = "$city, $country"
+                                    fetchRealNearbyRestaurants(lat, lon)
                                 }
                             }
                         }

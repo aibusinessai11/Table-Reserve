@@ -142,7 +142,7 @@
     <!-- Script Zone for 100% interactive database and application states -->
     <script>
       // Simulated SQLite/Room database in LocalStorage
-      const DEFAULT_RESTAURANTS = [
+      let DEFAULT_RESTAURANTS = [
         { id: 1, name: "The Rustic Olive", cuisine: "Итальянская", image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60", rating: 4.8, reviews: "1.2k", distance: "250м", timeWalk: "4 мин", freeTables: 2, tags: ["Italian", "Highest Rated"] },
         { id: 2, name: "Ginger & Soy", cuisine: "Азиатская", image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60", rating: 4.6, reviews: "850", distance: "450м", timeWalk: "7 мин", freeTables: 4, tags: ["Asian"] },
         { id: 3, name: "La Parisienne", cuisine: "Французская", image: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=500&auto=format&fit=crop&q=60", rating: 4.9, reviews: "1.5k", distance: "600м", timeWalk: "9 мин", freeTables: 1, tags: ["French", "Highest Rated"] },
@@ -866,6 +866,9 @@
           const data = await res.json();
           if (data && data.city) {
             updateLocationDisplay(data.city, data.country_name || "РФ");
+            if (data.latitude && data.longitude) {
+              fetchWebNearbyRestaurants(data.latitude, data.longitude);
+            }
           }
         } catch (e) {
           console.log("IP lookup failed, trying navigator.geolocation", e);
@@ -877,6 +880,8 @@
             try {
               const lat = position.coords.latitude;
               const lon = position.coords.longitude;
+              fetchWebNearbyRestaurants(lat, lon);
+
               const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ru`);
               const geoData = await geoRes.json();
               if (geoData && geoData.address) {
@@ -892,6 +897,101 @@
           }, (err) => {
             console.warn("User denied geolocation permission", err);
           });
+        }
+      }
+
+      async function fetchWebNearbyRestaurants(lat, lon) {
+        try {
+          // Query OSM Overpass API to get 15 real restaurants & cafes in 3km area
+          const overpassQuery = `[out:json];(node["amenity"="restaurant"](around:3000,${lat},${lon});node["amenity"="cafe"](around:3000,${lat},${lon}););out 15;`;
+          const res = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(overpassQuery)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data && data.elements && data.elements.length > 0) {
+            const list = [];
+            
+            const imagePool = [
+              "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=500&auto=format&fit=crop&q=60",
+              "https://images.unsplash.com/photo-1563245372-f21724e3856d?w=500&auto=format&fit=crop&q=60"
+            ];
+
+            const mapCuisineJs = (cuisineTag) => {
+              if (!cuisineTag) return "Европейская";
+              const tag = cuisineTag.toLowerCase();
+              if (tag.includes("italian") || tag.includes("pizza") || tag.includes("pasta")) return "Итальянская";
+              if (tag.includes("asian") || tag.includes("japanese") || tag.includes("sushi") || tag.includes("chinese")) return "Азиатская";
+              if (tag.includes("french")) return "Французская";
+              if (tag.includes("burger") || tag.includes("american") || tag.includes("fast_food")) return "Бургеры";
+              if (tag.includes("cafe") || tag.includes("coffee") || tag.includes("bakery")) return "Кофейня & Десерты";
+              if (tag.includes("german") || tag.includes("beer")) return "Баварский паб";
+              if (tag.includes("georgian")) return "Грузинская";
+              if (tag.includes("russian")) return "Русская";
+              if (tag.includes("grill") || tag.includes("steak") || tag.includes("meat") || tag.includes("bbq")) return "Гриль";
+              return "Европейская";
+            };
+
+            const calculateDistanceJs = (lat1, lon1, lat2, lon2) => {
+              const R = 6371; // km
+              const dLat = (lat2 - lat1) * Math.PI / 180;
+              const dLon = (lon2 - lon1) * Math.PI / 180;
+              const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              return R * c * 1000; // in meters
+            };
+
+            data.elements.forEach((elem, idx) => {
+              if (elem.tags && elem.tags.name) {
+                const distM = Math.round(calculateDistanceJs(lat, lon, elem.lat, elem.lon));
+                const distText = distM < 1000 ? `${distM}м` : `${(distM / 1000).toFixed(1)}км`;
+                const walkTime = Math.max(1, Math.round(distM / 80)); // ~80m/min
+                const img = imagePool[idx % imagePool.length];
+                const rating = (4.3 + Math.random() * 0.6).toFixed(1);
+                const reviews = Math.floor(50 + Math.random() * 950).toString();
+                const freeT = Math.floor(1 + Math.random() * 6);
+                
+                const tagNames = [mapCuisineJs(elem.tags.cuisine)];
+                if (parseFloat(rating) >= 4.7) tagNames.push("Рекомендуем");
+
+                list.push({
+                  id: `osm_${elem.id}`,
+                  name: elem.tags.name,
+                  cuisine: mapCuisineJs(elem.tags.cuisine),
+                  image: img,
+                  rating: parseFloat(rating),
+                  reviews: reviews + (Math.random() > 0.5 ? "" : " +"),
+                  distance: distText,
+                  timeWalk: `${walkTime} мин`,
+                  freeTables: freeT,
+                  tags: tagNames,
+                  lat: elem.lat,
+                  lon: elem.lon,
+                  address: elem.tags["addr:street"] ? `ул. ${elem.tags["addr:street"]}, ${elem.tags["addr:housenumber"] || ""}` : "В районе вашей геолокации"
+                });
+              }
+            });
+
+            if (list.length > 0) {
+              list.sort((a, b) => {
+                const distA = a.distance.includes("км") ? parseFloat(a.distance) * 1000 : parseInt(a.distance);
+                const distB = b.distance.includes("км") ? parseFloat(b.distance) * 1000 : parseInt(b.distance);
+                return distA - distB;
+              });
+              DEFAULT_RESTAURANTS.length = 0;
+              list.forEach(item => DEFAULT_RESTAURANTS.push(item));
+              renderActiveScreen();
+            }
+          }
+        } catch (e) {
+          console.error("OSM loading failed on web:", e);
         }
       }
 
