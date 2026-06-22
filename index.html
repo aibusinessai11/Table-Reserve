@@ -87,7 +87,7 @@
             <div class="hidden sm:block w-32 h-4.5 bg-black rounded-b-2xl mx-auto mb-2 opacity-90"></div>
             
             <div class="flex justify-between items-center mb-2">
-              <div class="flex items-center gap-2">
+              <div onclick="openLocationSelectModal()" class="flex items-center gap-2 cursor-pointer hover:opacity-80 active:scale-95 transition-all">
                 <div class="w-9 h-9 bg-[#EADDFF] rounded-full flex items-center justify-center">
                   <span class="material-symbols-outlined text-[#21005D] text-lg">location_on</span>
                 </div>
@@ -154,6 +154,41 @@
         <div class="flex justify-end gap-2 mt-2">
           <button onclick="closeGoogleProfileModal()" class="px-4 py-2 text-xs font-semibold text-[#6750A4] hover:bg-[#F3EDF7] rounded-full transition-all">Закрыть</button>
           <button id="google-modal-action-btn" class="px-5 py-2 text-xs font-bold bg-[#6750A4] text-white rounded-full hover:bg-[#21005D] shadow transition-all"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Location Selection Modal Dialog -->
+    <div id="location-select-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-200">
+      <div class="bg-white rounded-[28px] max-w-sm w-full p-6 shadow-2xl flex flex-col gap-4 transform scale-95 transition-all duration-200" id="location-modal-content">
+        <div class="flex items-center gap-2 text-[#6750A4]">
+          <span class="material-symbols-outlined text-2xl">place</span>
+          <h3 class="text-base font-bold text-[#1D1B20]">Укажите местоположение</h3>
+        </div>
+        
+        <div class="flex flex-col gap-3">
+          <p class="text-xs text-[#49454F] leading-relaxed">Введите название города или адреса, чтобы найти свободные столики в заведениях поблизости.</p>
+          
+          <div class="relative">
+            <input type="text" id="manual-city-input" placeholder="Название города (например: Сочи, Санкт-Петербург, Москва)" class="w-full bg-[#F3EDF7] border border-[#CAC4D0] text-[#1D1B20] text-xs py-3.5 pl-3 pr-10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6750A4] transition-all" />
+            <button onclick="document.getElementById('manual-city-input').value = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+
+          <div id="location-search-status" class="hidden text-xs text-indigo-600 font-bold animate-pulse text-center">
+            Ищем город на карте...
+          </div>
+          
+          <button onclick="handleAutoLocationDetect()" class="w-full py-3 px-4 bg-[#F3EDF7] hover:bg-[#EADDFF] text-[#21005D] text-xs font-bold rounded-2xl transition-all flex items-center justify-center gap-2 border border-[#CAC4D0] mt-1">
+            <span class="material-symbols-outlined text-sm">my_location</span>
+            Определить автоматически
+          </button>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+          <button onclick="closeLocationSelectModal()" class="px-4 py-2 text-xs font-semibold text-[#6750A4] hover:bg-[#F3EDF7] rounded-full transition-all">Отмена</button>
+          <button onclick="handleManualCitySearch()" class="px-5 py-2 text-xs font-bold bg-[#6750A4] text-white rounded-full hover:bg-[#21005D] shadow transition-all">Применить</button>
         </div>
       </div>
     </div>
@@ -1057,22 +1092,126 @@
         }
       }
 
-      async function detectUserLocation() {
-        // 1. Silent IP fallback first to get immediate results without blocking
+      window.openLocationSelectModal = function() {
+        const modal = document.getElementById("location-select-modal");
+        modal.classList.remove("opacity-0", "pointer-events-none");
+        document.getElementById("location-modal-content").classList.remove("scale-95");
+        document.getElementById("location-modal-content").classList.add("scale-100");
+      };
+
+      window.closeLocationSelectModal = function() {
+        const modal = document.getElementById("location-select-modal");
+        document.getElementById("location-modal-content").classList.remove("scale-100");
+        document.getElementById("location-modal-content").classList.add("scale-95");
+        modal.classList.add("opacity-0", "pointer-events-none");
+      };
+
+      window.handleAutoLocationDetect = async function() {
+        closeLocationSelectModal();
+        showToast("Автоматически определяем местоположение...");
+        await detectUserLocation();
+      };
+
+      window.handleManualCitySearch = async function() {
+        const inputEl = document.getElementById("manual-city-input");
+        const query = inputEl.value.trim();
+        if (!query) {
+          showToast("Пожалуйста, введите название города", false);
+          return;
+        }
+
+        const statusEl = document.getElementById("location-search-status");
+        statusEl.classList.remove("hidden");
+
         try {
-          const res = await fetch('https://ipapi.co/json/');
-          const data = await res.json();
-          if (data && data.city) {
-            updateLocationDisplay(data.city, data.country_name || "РФ");
-            if (data.latitude && data.longitude) {
-              fetchWebNearbyRestaurants(data.latitude, data.longitude);
+          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=ru`);
+          if (!response.ok) {
+            throw new Error("Nominatim query failed");
+          }
+          const results = await response.json();
+          if (results && results.length > 0) {
+            const place = results[0];
+            const lat = parseFloat(place.lat);
+            const lon = parseFloat(place.lon);
+            
+            const parts = place.display_name.split(",");
+            const niceName = parts.length >= 2 ? `${parts[0].trim()}, ${parts[parts.length - 1].trim()}` : query;
+
+            updateLocationDisplay(niceName, "");
+            fetchWebNearbyRestaurants(lat, lon);
+            
+            closeLocationSelectModal();
+            showToast(`Локация успешно обновлена: ${niceName}`);
+          } else {
+            showToast("Не удалось найти указанную локацию. Попробуйте точнее или на латинице.", false);
+          }
+        } catch (err) {
+          console.error("OSM Geocoding failed", err);
+          showToast("Ошибка при поиске локации. Повторите попытку.", false);
+        } finally {
+          statusEl.classList.add("hidden");
+        }
+      };
+
+      async function detectUserLocation() {
+        let success = false;
+        
+        // 1. Silent IP fallback using freeipapi.com (secure & reliable)
+        try {
+          const res = await fetch('https://freeipapi.com/api/json');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.cityName) {
+              updateLocationDisplay(data.cityName, data.countryName || "РФ");
+              if (data.latitude && data.longitude) {
+                fetchWebNearbyRestaurants(data.latitude, data.longitude);
+                success = true;
+              }
             }
           }
         } catch (e) {
-          console.log("IP lookup failed, trying navigator.geolocation", e);
+          console.log("freeipapi lookup failed, trying ipwho.is", e);
         }
 
-        // 2. High-precision browser geolocation if permission is granted
+        // 2. Secondary fallback using ipwho.is
+        if (!success) {
+          try {
+            const res = await fetch('https://ipwho.is/');
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.success && data.city) {
+                updateLocationDisplay(data.city, data.country || "РФ");
+                if (data.latitude && data.longitude) {
+                  fetchWebNearbyRestaurants(data.latitude, data.longitude);
+                  success = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.log("ipwho.is lookup failed, trying ipapi", e);
+          }
+        }
+
+        // 3. Third fallback using ipapi.co
+        if (!success) {
+          try {
+            const res = await fetch('https://ipapi.co/json/');
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.city) {
+                updateLocationDisplay(data.city, data.country_name || "РФ");
+                if (data.latitude && data.longitude) {
+                  fetchWebNearbyRestaurants(data.latitude, data.longitude);
+                  success = true;
+                }
+              }
+            }
+          } catch (e) {
+            console.log("ipapi lookup failed, trying navigator.geolocation", e);
+          }
+        }
+
+        // 4. High-precision browser geolocation if permission is granted
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(async (position) => {
             try {
@@ -1081,12 +1220,14 @@
               fetchWebNearbyRestaurants(lat, lon);
 
               const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ru`);
-              const geoData = await geoRes.json();
-              if (geoData && geoData.address) {
-                const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.suburb || geoData.address.state;
-                const country = geoData.address.country || "РФ";
-                if (city) {
-                  updateLocationDisplay(city, country);
+              if (geoRes.ok) {
+                const geoData = await geoRes.json();
+                if (geoData && geoData.address) {
+                  const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.suburb || geoData.address.state;
+                  const country = geoData.address.country || "РФ";
+                  if (city) {
+                    updateLocationDisplay(city, country);
+                  }
                 }
               }
             } catch (err) {

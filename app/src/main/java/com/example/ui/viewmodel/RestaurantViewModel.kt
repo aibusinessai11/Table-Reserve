@@ -329,30 +329,34 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     fun fetchGeoLocationByIp() {
         viewModelScope.launch {
             var success = false
+            val client = OkHttpClient()
+            
+            // Try 1: ipapi.co
             try {
-                val client = OkHttpClient()
                 val request = Request.Builder()
                     .url("https://ipapi.co/json/")
+                    .header("User-Agent", "TableReserveAndroid")
                     .build()
-                
                 withContext(Dispatchers.IO) {
                     client.newCall(request).execute().use { response ->
                         if (response.isSuccessful) {
                             val bodyString = response.body?.string()
                             if (!bodyString.isNullOrEmpty()) {
                                 val json = JSONObject(bodyString)
-                                val city = json.optString("city", "Москва")
+                                val city = json.optString("city", "")
                                 val country = json.optString("country_name", "Россия")
-                                val lat = json.optDouble("latitude", 55.7512)
-                                val lon = json.optDouble("longitude", 37.6184)
+                                val lat = json.optDouble("latitude", Double.NaN)
+                                val lon = json.optDouble("longitude", Double.NaN)
                                 
-                                withContext(Dispatchers.Main) {
-                                    userLatitude.value = lat
-                                    userLongitude.value = lon
-                                    userLocationName.value = "$city, $country"
-                                    fetchRealNearbyRestaurants(lat, lon)
+                                if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                    withContext(Dispatchers.Main) {
+                                        userLatitude.value = lat
+                                        userLongitude.value = lon
+                                        userLocationName.value = "$city, $country"
+                                        fetchRealNearbyRestaurants(lat, lon)
+                                    }
+                                    success = true
                                 }
-                                success = true
                             }
                         }
                     }
@@ -360,10 +364,135 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            // Try 2: freeipapi.com (reliable secure backup)
+            if (!success) {
+                try {
+                    val request = Request.Builder()
+                        .url("https://freeipapi.com/api/json")
+                        .header("User-Agent", "TableReserveAndroid")
+                        .build()
+                    withContext(Dispatchers.IO) {
+                        client.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val bodyString = response.body?.string()
+                                if (!bodyString.isNullOrEmpty()) {
+                                    val json = JSONObject(bodyString)
+                                    val city = json.optString("cityName", json.optString("city", ""))
+                                    val country = json.optString("countryName", "Россия")
+                                    val lat = json.optDouble("latitude", Double.NaN)
+                                    val lon = json.optDouble("longitude", Double.NaN)
+
+                                    if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                        withContext(Dispatchers.Main) {
+                                            userLatitude.value = lat
+                                            userLongitude.value = lon
+                                            userLocationName.value = "$city, $country"
+                                            fetchRealNearbyRestaurants(lat, lon)
+                                        }
+                                        success = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // Try 3: ipwho.is (backup 2)
+            if (!success) {
+                try {
+                    val request = Request.Builder()
+                        .url("https://ipwho.is/")
+                        .header("User-Agent", "TableReserveAndroid")
+                        .build()
+                    withContext(Dispatchers.IO) {
+                        client.newCall(request).execute().use { response ->
+                            if (response.isSuccessful) {
+                                val bodyString = response.body?.string()
+                                if (!bodyString.isNullOrEmpty()) {
+                                    val json = JSONObject(bodyString)
+                                    val city = json.optString("city", "")
+                                    val country = json.optString("country", "Россия")
+                                    val lat = json.optDouble("latitude", Double.NaN)
+                                    val lon = json.optDouble("longitude", Double.NaN)
+
+                                    if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                        withContext(Dispatchers.Main) {
+                                            userLatitude.value = lat
+                                            userLongitude.value = lon
+                                            userLocationName.value = "$city, $country"
+                                            fetchRealNearbyRestaurants(lat, lon)
+                                        }
+                                        success = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
             if (!success) {
                 withContext(Dispatchers.Main) {
                     fetchRealNearbyRestaurants(userLatitude.value, userLongitude.value)
                 }
+            }
+        }
+    }
+
+    fun geocodingAndSetLocation(cityName: String, onResult: (Boolean) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val client = OkHttpClient()
+                val url = "https://nominatim.openstreetmap.org/search?format=json&q=${java.net.URLEncoder.encode(cityName, "UTF-8")}&limit=1&accept-language=ru"
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "TableReserveAndroid")
+                    .build()
+                
+                val success = withContext(Dispatchers.IO) {
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyString = response.body?.string()
+                            if (!bodyString.isNullOrEmpty()) {
+                                val jsonArray = org.json.JSONArray(bodyString)
+                                if (jsonArray.length() > 0) {
+                                    val obj = jsonArray.getJSONObject(0)
+                                    val lat = obj.optDouble("lat", Double.NaN)
+                                    val lon = obj.optDouble("lon", Double.NaN)
+                                    val displayName = obj.optString("display_name", cityName)
+                                    
+                                    val parts = displayName.split(",")
+                                    val simplifiedName = if (parts.isNotEmpty()) {
+                                        if (parts.size >= 2) "${parts[0].trim()}, ${parts.last().trim()}" else parts[0].trim()
+                                    } else {
+                                        cityName
+                                    }
+                                    
+                                    if (!lat.isNaN() && !lon.isNaN()) {
+                                        withContext(Dispatchers.Main) {
+                                            userLatitude.value = lat
+                                            userLongitude.value = lon
+                                            userLocationName.value = simplifiedName
+                                            fetchRealNearbyRestaurants(lat, lon)
+                                        }
+                                        return@withContext true
+                                    }
+                                }
+                            }
+                        }
+                        false
+                    }
+                }
+                onResult(success)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onResult(false)
             }
         }
     }

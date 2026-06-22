@@ -52,6 +52,7 @@ fun HomeScreen(
     val searchRadiusKm by viewModel.searchRadiusKm.collectAsState()
     val context = LocalContext.current
 
+    var showLocationDialog by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     val isGoogleConnected by viewModel.isGoogleConnected.collectAsState()
     val onlyGoogleSavedPlaces by viewModel.onlyGoogleSavedPlaces.collectAsState()
@@ -77,7 +78,11 @@ fun HomeScreen(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showLocationDialog = true }
+                            .padding(4.dp)
                     ) {
                         Box(
                             modifier = Modifier
@@ -634,6 +639,115 @@ fun HomeScreen(
             dismissButton = {
                 TextButton(onClick = { showProfileDialog = false }) {
                     Text("Закрыть")
+                }
+            }
+        )
+    }
+
+    if (showLocationDialog) {
+        var manualCityInput by remember { mutableStateOf("") }
+        var isSearchingCity by remember { mutableStateOf(false) }
+        
+        AlertDialog(
+            onDismissRequest = { showLocationDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text("Местоположение", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Укажите ваш город или адрес, чтобы увидеть свободные столики в заведениях поблизости.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    OutlinedTextField(
+                        value = manualCityInput,
+                        onValueChange = { manualCityInput = it },
+                        label = { Text("Название города (например Sochi, Москва)") },
+                        singleLine = true,
+                        placeholder = { Text("Москва, Россия") },
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            if (manualCityInput.isNotEmpty()) {
+                                IconButton(onClick = { manualCityInput = "" }) {
+                                    Icon(imageVector = Icons.Default.Clear, contentDescription = "Очистить")
+                                }
+                            }
+                        }
+                    )
+                    
+                    if (isSearchingCity) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .align(Alignment.CenterHorizontally),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    
+                    Button(
+                        onClick = {
+                            viewModel.fetchGeoLocationByIp()
+                            showLocationDialog = false
+                            android.widget.Toast.makeText(context, "Определяем по IP...", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Определить автоматически", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (manualCityInput.trim().isNotEmpty()) {
+                            isSearchingCity = true
+                            viewModel.geocodingAndSetLocation(manualCityInput.trim()) { success ->
+                                isSearchingCity = false
+                                if (success) {
+                                    showLocationDialog = false
+                                    android.widget.Toast.makeText(context, "Локация успешно обновлена!", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    android.widget.Toast.makeText(context, "Не удалось найти город. Попробуйте на латинице или точнее.", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        } else {
+                            android.widget.Toast.makeText(context, "Введите название города", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    enabled = !isSearchingCity && manualCityInput.trim().isNotEmpty()
+                ) {
+                    Text("Найти")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLocationDialog = false }) {
+                    Text("Отмена")
                 }
             }
         )
