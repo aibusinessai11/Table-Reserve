@@ -3,42 +3,44 @@ package com.example.repository
 import com.example.data.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class RestaurantRepository(private val appDao: AppDao) {
 
+    private val seedMutex = Mutex()
+    private var isSeeded = false
+
     val restaurants: Flow<List<Restaurant>> = appDao.getAllRestaurants()
-        .onStart {
-            ensureSeeded()
-        }
 
     val reservations: Flow<List<Reservation>> = appDao.getAllReservations()
 
     val loyaltyProfile: Flow<LoyaltyProfile?> = appDao.getLoyaltyProfileFlow()
-        .onStart {
-            ensureSeeded()
-        }
 
     val rewards: Flow<List<LoyaltyReward>> = appDao.getAllRewards()
-        .onStart {
-            ensureSeeded()
-        }
 
-    suspend fun ensureSeeded() {
-        // Seed Restaurants if empty
-        val list = appDao.getAllRestaurants().first()
-        if (list.isEmpty()) {
-            appDao.insertRestaurants(Restaurant.getMockRestaurants())
-        }
-        // Seed Loyalty profile
-        val profile = appDao.getLoyaltyProfile()
-        if (profile == null) {
-            appDao.insertLoyaltyProfile(LoyaltyProfile())
-        }
-        // Seed rewards
-        val rewardsList = appDao.getAllRewards().first()
-        if (rewardsList.isEmpty()) {
-            appDao.insertRewards(LoyaltyReward.getMockRewards())
+    suspend fun ensureSeeded() = withContext(Dispatchers.IO) {
+        if (isSeeded) return@withContext
+        seedMutex.withLock {
+            if (isSeeded) return@withLock
+            // Seed Restaurants if empty
+            val list = appDao.getAllRestaurants().first()
+            if (list.isEmpty()) {
+                appDao.insertRestaurants(Restaurant.getMockRestaurants())
+            }
+            // Seed Loyalty profile
+            val profile = appDao.getLoyaltyProfile()
+            if (profile == null) {
+                appDao.insertLoyaltyProfile(LoyaltyProfile())
+            }
+            // Seed rewards
+            val rewardsList = appDao.getAllRewards().first()
+            if (rewardsList.isEmpty()) {
+                appDao.insertRewards(LoyaltyReward.getMockRewards())
+            }
+            isSeeded = true
         }
     }
 
