@@ -1,0 +1,6 @@
+{
+  "name": "Table Reserve",
+  "description": "Nearby restaurant locator, live seat tracking, visual routes, online table bookings, and integrated loyalty rewards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
