@@ -437,7 +437,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
         viewModelScope.launch {
             try {
                 val client = OkHttpClient()
-                val url = "https://nominatim.openstreetmap.org/search?format=json&q=${java.net.URLEncoder.encode(cityName, "UTF-8")}&limit=1&accept-language=ru"
+                val url = "https://nominatim.openstreetmap.org/search?format=json&q=${java.net.URLEncoder.encode(cityName, "UTF-8")}&limit=1&accept-language=ru&addressdetails=1"
                 val request = Request.Builder()
                     .url(url)
                     .header("User-Agent", "TableReserveAndroid")
@@ -453,13 +453,28 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     val obj = jsonArray.getJSONObject(0)
                                     val lat = obj.optDouble("lat", Double.NaN)
                                     val lon = obj.optDouble("lon", Double.NaN)
-                                    val displayName = obj.optString("display_name", cityName)
+                                    val address = obj.optJSONObject("address")
                                     
-                                    val parts = displayName.split(",")
-                                    val simplifiedName = if (parts.isNotEmpty()) {
-                                        if (parts.size >= 2) "${parts[0].trim()}, ${parts.last().trim()}" else parts[0].trim()
+                                    val simplifiedName = if (address != null) {
+                                        val city = address.optString("city", address.optString("town", address.optString("village", address.optString("hamlet", address.optString("state", "")))))
+                                        val road = address.optString("road", address.optString("street", address.optString("pedestrian", "")))
+                                        val houseNumber = address.optString("house_number", "")
+                                        if (road.isNotEmpty()) {
+                                            if (city.isNotEmpty()) {
+                                                if (houseNumber.isNotEmpty()) "$city, $road, $houseNumber" else "$city, $road"
+                                            } else {
+                                                if (houseNumber.isNotEmpty()) "$road, $houseNumber" else road
+                                            }
+                                        } else {
+                                            val suburb = address.optString("suburb", "")
+                                            if (suburb.isNotEmpty()) {
+                                                if (city.isNotEmpty()) "$city, $suburb" else suburb
+                                            } else {
+                                                obj.optString("display_name", cityName).split(",").take(2).joinToString(", ")
+                                            }
+                                        }
                                     } else {
-                                        cityName
+                                        obj.optString("display_name", cityName).split(",").take(2).joinToString(", ")
                                     }
                                     
                                     if (!lat.isNaN() && !lon.isNaN()) {
@@ -502,10 +517,26 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                 val json = JSONObject(bodyString)
                                 val address = json.optJSONObject("address")
                                 if (address != null) {
-                                    val city = address.optString("city", address.optString("town", address.optString("village", address.optString("state", "Мой Город"))))
-                                    val country = address.optString("country", "Россия")
+                                    val city = address.optString("city", address.optString("town", address.optString("village", address.optString("hamlet", address.optString("state", "Мой Город")))))
+                                    val road = address.optString("road", address.optString("street", address.optString("pedestrian", "")))
+                                    val houseNumber = address.optString("house_number", "")
+                                    val formattedName = if (road.isNotEmpty()) {
+                                        if (houseNumber.isNotEmpty()) {
+                                            "$city, $road, $houseNumber"
+                                        } else {
+                                            "$city, $road"
+                                        }
+                                    } else {
+                                        val suburb = address.optString("suburb", "")
+                                        if (suburb.isNotEmpty()) {
+                                            "$city, $suburb"
+                                        } else {
+                                            val country = address.optString("country", "Россия")
+                                            "$city, $country"
+                                        }
+                                    }
                                     withContext(Dispatchers.Main) {
-                                        userLocationName.value = "$city, $country"
+                                        userLocationName.value = formattedName
                                     }
                                 }
                             }

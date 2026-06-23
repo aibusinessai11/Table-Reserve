@@ -127,8 +127,24 @@ class MainActivity : ComponentActivity() {
                     if (addresses.isNotEmpty()) {
                         val address = addresses[0]
                         val city = address.locality ?: address.subAdminArea ?: address.adminArea ?: "Мой Город"
-                        val country = address.countryName ?: "Россия"
-                        viewModel.updateLocationName("$city, $country")
+                        val street = address.thoroughfare
+                        val house = address.subThoroughfare
+                        val nameStr = if (!street.isNullOrEmpty()) {
+                            if (!house.isNullOrEmpty()) {
+                                "$city, $street, $house"
+                            } else {
+                                "$city, $street"
+                            }
+                        } else {
+                            val line = address.getAddressLine(0)
+                            if (!line.isNullOrEmpty()) {
+                                line.substringBefore(", Россия").substringBefore(", Russia")
+                            } else {
+                                val country = address.countryName ?: "Россия"
+                                "$city, $country"
+                            }
+                        }
+                        viewModel.updateLocationName(nameStr)
                     }
                 }
             } else {
@@ -137,8 +153,24 @@ class MainActivity : ComponentActivity() {
                 if (!addresses.isNullOrEmpty()) {
                     val address = addresses[0]
                     val city = address.locality ?: address.subAdminArea ?: address.adminArea ?: "Мой Город"
-                    val country = address.countryName ?: "Россия"
-                    viewModel.updateLocationName("$city, $country")
+                    val street = address.thoroughfare
+                    val house = address.subThoroughfare
+                    val nameStr = if (!street.isNullOrEmpty()) {
+                        if (!house.isNullOrEmpty()) {
+                            "$city, $street, $house"
+                        } else {
+                            "$city, $street"
+                        }
+                    } else {
+                        val line = address.getAddressLine(0)
+                        if (!line.isNullOrEmpty()) {
+                            line.substringBefore(", Россия").substringBefore(", Russia")
+                        } else {
+                            val country = address.countryName ?: "Россия"
+                            "$city, $country"
+                        }
+                    }
+                    viewModel.updateLocationName(nameStr)
                 }
             }
         } catch (e: Exception) {
