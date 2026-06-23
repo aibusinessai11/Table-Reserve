@@ -49,67 +49,9 @@ fun AppNavigation(
     }
 
     // Determine if we should show bottom navigation bar (only on main screens)
-    val showBottomBar = currentRoute in listOf(
-        Screen.Home.route,
-        Screen.Reservations.route,
-        Screen.Loyalty.route
-    )
+    val showBottomBar = false
 
     Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
-                    modifier = Modifier.testTag("app_bottom_bar")
-                ) {
-                    val items = listOf(
-                        NavigationItem(
-                            title = "Поиск",
-                            route = Screen.Home.route,
-                            selectedIcon = Icons.Filled.Restaurant,
-                            unselectedIcon = Icons.Outlined.Restaurant
-                        ),
-                        NavigationItem(
-                            title = "Бронирования",
-                            route = Screen.Reservations.route,
-                            selectedIcon = Icons.Filled.EventNote,
-                            unselectedIcon = Icons.Outlined.EventNote
-                        ),
-                        NavigationItem(
-                            title = "Клуб лояльности",
-                            route = Screen.Loyalty.route,
-                            selectedIcon = Icons.Filled.CardGiftcard,
-                            unselectedIcon = Icons.Outlined.CardGiftcard
-                        )
-                    )
-
-                    items.forEach { item ->
-                        val isSelected = currentRoute == item.route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.title
-                                )
-                            },
-                            label = { Text(item.title) },
-                            modifier = Modifier.testTag("bottom_nav_${item.route}")
-                        )
-                    }
-                }
-            }
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         modifier = modifier
     ) { innerPadding ->

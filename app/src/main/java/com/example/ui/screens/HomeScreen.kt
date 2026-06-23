@@ -1,10 +1,11 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -51,6 +52,8 @@ fun HomeScreen(
     val userLocationName by viewModel.userLocationName.collectAsState()
     val isLoading by viewModel.isLoadingRestaurants.collectAsState()
     val searchRadiusKm by viewModel.searchRadiusKm.collectAsState()
+    val userLatitude by viewModel.userLatitude.collectAsState()
+    val userLongitude by viewModel.userLongitude.collectAsState()
     val context = LocalContext.current
 
     var showLocationDialog by remember { mutableStateOf(false) }
@@ -249,33 +252,49 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Live availability switch
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.onlyAvailable.value = !onlyAvailable }
-                        .padding(vertical = 4.dp)
-                ) {
-                    Switch(
-                        checked = onlyAvailable,
-                        onCheckedChange = { viewModel.onlyAvailable.value = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary
-                        )
+                // Active Radar Search Status Indicator
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                    ),
+                    border = BorderStroke(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Только со свободными столиками",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Показывать заведения, готовые принять гостей прямо сейчас",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Explore,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Интерактивный радар активирован",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Поиск заведений в реальном времени в радиусе $searchRadiusKm км",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
 
@@ -333,96 +352,172 @@ fun HomeScreen(
                 }
             }
 
-            // Beautiful Geometric Live Map Area matching the requested HTML pattern
+            // Circular animated Radar Component plots restaurants dynamically!
+            val infiniteTransition = rememberInfiniteTransition(label = "RadarSweep")
+            val sweepAngle by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = 360f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 3500, easing = androidx.compose.animation.core.LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "RadarAngle"
+            )
+
             Card(
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp)
+                    .height(230.dp)
                     .padding(horizontal = 16.dp, vertical = 6.dp)
                     .border(
                         1.dp,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                         RoundedCornerShape(24.dp)
                     )
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    // Draw geometric radial spot patterns using custom Canvas dots
                     androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                         val canvasSize = size
-                        val dotSpacing = 16.dp.toPx()
-                        val dotRadius = 1.2.dp.toPx()
-                        val numX = (canvasSize.width / dotSpacing).toInt()
-                        val numY = (canvasSize.height / dotSpacing).toInt()
-                        for (i in 0..numX) {
-                            for (j in 0..numY) {
+                        val center = androidx.compose.ui.geometry.Offset(canvasSize.width / 2, canvasSize.height / 2)
+                        val maxRadius = kotlin.math.min(canvasSize.width, canvasSize.height) * 0.44f
+
+                        // Draw concentric radar lines with customizable alpha
+                        drawCircle(
+                            color = Color(0xFF6750A4).copy(alpha = 0.08f),
+                            radius = maxRadius,
+                            center = center
+                        )
+                        drawCircle(
+                            color = Color(0xFF6750A4).copy(alpha = 0.12f),
+                            radius = maxRadius * 0.66f,
+                            center = center,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                        )
+                        drawCircle(
+                            color = Color(0xFF6750A4).copy(alpha = 0.18f),
+                            radius = maxRadius * 0.33f,
+                            center = center,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx())
+                        )
+                        drawCircle(
+                            color = Color(0xFF6750A4).copy(alpha = 0.25f),
+                            radius = maxRadius,
+                            center = center,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.5.dp.toPx())
+                        )
+
+                        // Radar angle sweep line
+                        val angleRad = Math.toRadians(sweepAngle.toDouble())
+                        val endX = center.x + maxRadius * kotlin.math.cos(angleRad).toFloat()
+                        val endY = center.y + maxRadius * kotlin.math.sin(angleRad).toFloat()
+                        drawLine(
+                            color = Color(0xFF4CAF50).copy(alpha = 0.8f),
+                            start = center,
+                            end = androidx.compose.ui.geometry.Offset(endX, endY),
+                            strokeWidth = 2.dp.toPx()
+                        )
+
+                        // Draw central user dot with "You" / "Вы" tag
+                        drawCircle(
+                            color = Color(0xFFB3261E),
+                            radius = 6.dp.toPx(),
+                            center = center
+                        )
+                        drawCircle(
+                            color = Color.White,
+                            radius = 6.dp.toPx(),
+                            center = center,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.8.dp.toPx())
+                        )
+
+                        // Plot loaded restaurants as neon green dots!
+                        val maxDistanceMeters = searchRadiusKm * 1000f
+                        restaurants.forEach { r ->
+                            val distance = r.distanceMeters.toFloat()
+                            if (distance <= maxDistanceMeters) {
+                                val ratio = distance / maxDistanceMeters
+                                // Map stable direction using the deterministic hashCode of the restaurant ID
+                                val pseudAngle = (r.id.hashCode() % 360).toDouble()
+                                val angleRadRest = Math.toRadians(pseudAngle)
+                                val rx = center.x + maxRadius * ratio * kotlin.math.cos(angleRadRest).toFloat()
+                                val ry = center.y + maxRadius * ratio * kotlin.math.sin(angleRadRest).toFloat()
+
+                                // Draw glowing neon spot
                                 drawCircle(
-                                    color = Color(0xFF6750A4).copy(alpha = 0.12f),
-                                    radius = dotRadius,
-                                    center = androidx.compose.ui.geometry.Offset(i * dotSpacing, j * dotSpacing)
+                                    color = Color(0xFF4CAF50).copy(alpha = 0.3f),
+                                    radius = 8.dp.toPx(),
+                                    center = androidx.compose.ui.geometry.Offset(rx, ry)
+                                )
+                                drawCircle(
+                                    color = Color(0xFF4CAF50),
+                                    radius = 4.dp.toPx(),
+                                    center = androidx.compose.ui.geometry.Offset(rx, ry)
                                 )
                             }
                         }
                     }
 
-                    // Abstract map targets & paths
+                    // Floating text label indicating active scanning range
+                    Text(
+                        text = "Диапазон: $searchRadiusKm км",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+
+                    // Floating "CENTER" Recenter Indicator
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp)
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .background(Color(0xFFB3261E), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            "ВЫ В ЦЕНТРЕ",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // Active Scanning status badge at top right
                     Box(
                         modifier = Modifier
-                            .align(Alignment.Center)
-                            .fillMaxSize()
+                            .align(Alignment.TopEnd)
+                            .padding(12.dp)
+                            .background(Color(0xFF4CAF50).copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
-                        // Small aesthetic elements
-                        Box(
-                            modifier = Modifier
-                                .offset(x = 60.dp, y = 30.dp)
-                                .size(8.dp)
-                                .background(Color(0xFF6750A4).copy(alpha = 0.4f), CircleShape)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .offset(x = 220.dp, y = 20.dp)
-                                .size(6.dp)
-                                .background(Color(0xFF6750A4).copy(alpha = 0.4f), CircleShape)
-                        )
-
-                        // The central floating marker from HTML: a table pin with white border
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .background(Color(0xFFB3261E), CircleShape)
-                                .border(2.dp, Color.White, CircleShape)
-                                .padding(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Restaurant,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                        }
-
-                        // Floating Recenter button exactly as specified in HTML
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Navigation,
-                                contentDescription = null,
-                                tint = Color(0xFF6750A4),
-                                modifier = Modifier.size(10.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(Color(0xFF4CAF50), CircleShape)
                             )
                             Text(
-                                "ЦЕНТР",
+                                "СКАНИРОВАНИЕ...",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1D1B20)
+                                color = Color(0xFF2E7D32)
                             )
                         }
                     }
@@ -843,23 +938,22 @@ fun RestaurantCard(
                     }
                 }
 
-                // Available tables quick tag at bottom right
-                val hasSlots = restaurant.availableTables > 0
-                val tagColor = if (hasSlots) Color(0xFF4CAF50) else Color(0xFFE53935)
-                val textValue = if (hasSlots) "Свободно столов: ${restaurant.availableTables}" else "Мест нет"
+                // Available on radar badge
+                val tagColor = Color(0xFF4CAF50)
+                val textValue = "Доступно на радаре"
 
                 Box(
                     modifier = Modifier
                         .padding(12.dp)
                         .align(Alignment.BottomEnd)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(tagColor)
+                        .background(tagColor.copy(alpha = 0.9f))
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = textValue,
                         color = Color.White,
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
                 }

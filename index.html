@@ -120,32 +120,8 @@
             <!-- Rendered dynamically by javascript -->
           </div>
 
-          <!-- Bottom Navigation Bar matching Kotlin's bottomBar -->
-          <nav class="h-20 bg-[#F3EDF7] border-t border-[#CAC4D0] flex items-center justify-around px-4 pb-2 flex-shrink-0">
-            <!-- Search/Explore Nav Link -->
-            <button onclick="switchScreen('home')" id="nav-home" class="flex flex-col items-center gap-1 text-[#21005D] cursor-pointer">
-              <div class="bg-[#EADDFF] px-5 py-1 rounded-full text-[#21005D] transition-all" id="nav-home-indicator">
-                <span class="material-symbols-outlined">explore</span>
-              </div>
-              <span class="text-[10px] font-bold">Поиск</span>
-            </button>
-
-            <!-- Bookings Nav Link -->
-            <button onclick="switchScreen('reservations')" id="nav-reservations" class="flex flex-col items-center gap-1 text-[#49454F] opacity-70 cursor-pointer">
-              <div class="bg-transparent px-5 py-1 rounded-full transition-all" id="nav-reservations-indicator">
-                <span class="material-symbols-outlined">calendar_today</span>
-              </div>
-              <span class="text-[10px] font-bold">Брони</span>
-            </button>
-
-            <!-- Loyalty Club Nav Link -->
-            <button onclick="switchScreen('loyalty')" id="nav-loyalty" class="flex flex-col items-center gap-1 text-[#49454F] opacity-70 cursor-pointer">
-              <div class="bg-transparent px-5 py-1 rounded-full transition-all" id="nav-loyalty-indicator">
-                <span class="material-symbols-outlined">loyalty</span>
-              </div>
-              <span class="text-[10px] font-bold">Клуб</span>
-            </button>
-          </nav>
+          <!-- Bottom Navigation Bar matching Kotlin's bottomBar (Hidden) -->
+          <nav class="hidden"></nav>
 
         </div>
       </main>
@@ -456,7 +432,7 @@
         listHeader.className = "flex justify-between items-center";
         listHeader.innerHTML = isWebLoadingRestaurants 
           ? `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Идет поиск заведений...</span>`
-          : `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider">Все свободные столики (${filtered.length})</span>`;
+          : `<span class="text-xs text-[#49454F] font-bold uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#4CAF50]"></span>Найдено поблизости (${filtered.length})</span>`;
         container.appendChild(listHeader);
 
         // Cards list
@@ -502,9 +478,9 @@
                     ` : `
                       <span class="bg-[#C4E7FF] text-[#001E2F] px-2 py-0.5 rounded text-[9px] font-bold tracking-wider">ТОП ВЫБОР</span>
                     `}
-                    <span class="text-[#B3261E] text-[10px] font-bold flex items-center gap-1">
-                      <span class="w-1.5 h-1.5 bg-[#B3261E] rounded-full ${res.freeTables > 0 ? 'animate-ping' : ''}"></span>
-                      ${res.freeTables > 0 ? `${res.freeTables} СТОЛА СВОБОДНО` : 'МЕСТ НЕТ / ЗАКРЫТО'}
+                    <span class="text-[#2E7D32] text-[10px] font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 bg-[#4CAF50] rounded-full animate-ping"></span>
+                      Доступно на радаре
                     </span>
                   </div>
                   <h3 class="text-lg font-bold tracking-tight text-[#1D1B20]">${res.name}</h3>
@@ -519,10 +495,10 @@
 
               <div class="grid grid-cols-2 gap-2 py-1.5 border-t border-[#CAC4D0]/30">
                 <div class="flex flex-col gap-0.5">
-                  <span class="text-[8px] uppercase tracking-wider text-[#49454F]">Бонусы клуба</span>
+                  <span class="text-[8px] uppercase tracking-wider text-[#49454F]">Средний чек</span>
                   <div class="flex items-center gap-1 text-[#6750A4]">
-                    <span class="material-symbols-outlined text-sm">toll</span>
-                    <span class="text-xs font-bold">+50 Баллов</span>
+                    <span class="material-symbols-outlined text-sm">payments</span>
+                    <span class="text-xs font-bold">${res.avgBill || '1500'} ₽</span>
                   </div>
                 </div>
                 <div class="flex flex-col gap-0.5">
@@ -535,7 +511,7 @@
               </div>
 
               <div class="flex gap-2">
-                <button onclick="switchScreen('detail', ${JSON.stringify(res).replace(/"/g, '&quot;')})" class="flex-1 py-3 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform hover:bg-[#5b4693] cursor-pointer">Забронировать</button>
+                <button onclick="switchScreen('detail', ${JSON.stringify(res).replace(/"/g, '&quot;')})" class="flex-1 py-3 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider active:scale-95 transition-transform hover:bg-[#5b4693] cursor-pointer">Подробнее</button>
                 <button onclick="switchScreen('route', ${JSON.stringify(res).replace(/"/g, '&quot;')})" class="w-11 h-11 border border-[#79747E] rounded-full flex items-center justify-center active:scale-95 transition-transform hover:bg-white/50 cursor-pointer text-[#49454F]">
                   <span class="material-symbols-outlined">directions</span>
                 </button>
@@ -607,49 +583,25 @@
             </p>
           </div>
           <div class="flex justify-between text-xs py-2 border-t border-[#CAC4D0]/30">
-            <span class="text-[#49454F]">Свободно сейчас:</span>
-            <span class="font-extrabold text-[#B3261E]">${selectedRestaurant.freeTables > 0 ? `${selectedRestaurant.freeTables} стола` : 'Мест нет (закрыто)'}</span>
+            <span class="text-[#49454F]">Средний чек:</span>
+            <span class="font-extrabold text-[#1D1B20]">${selectedRestaurant.averageBill || '1500'} ₽</span>
           </div>
         `;
         container.appendChild(infoDiv);
 
-        // Form selection parameters (Emulating Jetpack Compose inputs)
+        // Action card directly linking to Map/Route build
         const formDiv = document.createElement("div");
         formDiv.className = "bg-white p-4 rounded-3xl border border-[#CAC4D0] flex flex-col gap-4";
         formDiv.innerHTML = `
           <h4 class="text-xs text-[#21005D] font-bold uppercase tracking-wider mb-1 flex items-center gap-1">
-            <span class="material-symbols-outlined text-sm">room_service</span> Выберите параметры бронирования
+            <span class="material-symbols-outlined text-sm">directions</span> Направление движения
           </h4>
-          
-          <!-- Guests count fields -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-[#49454F] font-semibold">Количество гостей:</span>
-            <div class="grid grid-cols-4 gap-2">
-              <button onclick="selectGuestCount(1)" id="guests-1" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#6750A4] bg-[#EADDFF] text-[#21005D]">1 гость</button>
-              <button onclick="selectGuestCount(2)" id="guests-2" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">2 гостя</button>
-              <button onclick="selectGuestCount(4)" id="guests-4" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">4 гостя</button>
-              <button onclick="selectGuestCount(6)" id="guests-6" class="py-2.5 rounded-xl border text-xs font-bold transition-all border-[#CAC4D0] text-[#49454F]">6+ мест</button>
-            </div>
-          </div>
-
-          <!-- Date Selector standard -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-[#49454F] font-semibold">Дата визита:</span>
-            <input type="date" id="booking-date" class="bg-[#F3EDF7] border border-[#CAC4D0] text-xs py-3 px-4 rounded-xl text-[#1D1B20] focus:outline-none focus:ring-1 focus:ring-[#6750A4] font-medium" />
-          </div>
-
-          <!-- Time picker selector slots -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-[#49454F] font-semibold">Время бронирования:</span>
-            <div class="grid grid-cols-4 gap-1.5">
-              <button onclick="selectTimeSlot('18:00')" id="time-18" class="py-2 border text-xs font-bold rounded-lg border-[#6750A4] bg-[#EADDFF] text-[#21005D]">18:00</button>
-              <button onclick="selectTimeSlot('19:00')" id="time-19" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">19:00</button>
-              <button onclick="selectTimeSlot('20:00')" id="time-20" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">20:00</button>
-              <button onclick="selectTimeSlot('21:00')" id="time-21" class="py-2 border text-xs font-bold rounded-lg border-[#CAC4D0] text-[#49454F]">21:00</button>
-            </div>
-          </div>
-          
-          <button onclick="executeBooking()" class="w-full py-4 mt-2 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#5b4693] active:scale-95 transition-all cursor-pointer">ПОДТВЕРДИТЬ БРОНИРОВАНИЕ</button>
+          <p class="text-xs text-[#49454F] leading-relaxed">
+            Построить пеший или автомобильный маршрут к ресторану <b>"${selectedRestaurant.name}"</b> от вашего текущего местоположения.
+          </p>
+          <button onclick="switchScreen('route', ${JSON.stringify(selectedRestaurant).replace(/"/g, '&quot;')})" class="w-full py-4 bg-[#6750A4] text-white rounded-full font-bold text-xs uppercase tracking-wider hover:bg-[#5b4693] active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-xs">navigation</span> Построить маршрут
+          </button>
         `;
         container.appendChild(formDiv);
 
