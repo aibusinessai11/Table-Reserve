@@ -272,33 +272,15 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                 }
 
                 val sorted = realRestaurants.sortedBy { it.distanceMeters }
-                if (sorted.isNotEmpty()) {
-                    repository.updateRestaurants(sorted)
-                } else {
-                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
-                        val offsetLat = (idx - 3) * 0.005 + 0.003
-                        val offsetLon = (idx - 3) * 0.005 - 0.003
-                        r.copy(
-                            latitude = lat + offsetLat,
-                            longitude = lon + offsetLon,
-                            city = currentCityName
-                        )
-                    }
-                    repository.updateRestaurants(fallback)
+                repository.updateRestaurants(sorted)
+                if (sorted.isEmpty()) {
+                    _message.emit("Поблизости в радиусе ${searchRadiusKm.value} км заведений не найдено.")
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 try {
-                    val fallback = Restaurant.getMockRestaurants().mapIndexed { idx, r ->
-                        val offsetLat = (idx - 3) * 0.005 + 0.003
-                        val offsetLon = (idx - 3) * 0.005 - 0.003
-                        r.copy(
-                            latitude = lat + offsetLat,
-                            longitude = lon + offsetLon,
-                            city = currentCityName
-                        )
-                    }
-                    repository.updateRestaurants(fallback)
+                    repository.updateRestaurants(emptyList())
+                    _message.emit("Ошибка запроса к радару. Проверьте подключение.")
                 } catch (dbEx: Exception) {
                     dbEx.printStackTrace()
                 }
@@ -332,6 +314,11 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
             var success = false
             val client = OkHttpClient()
             
+            fun isRussianCountry(countryName: String): Boolean {
+                val upperStr = countryName.uppercase()
+                return upperStr.contains("RU") || upperStr.contains("RUSS") || upperStr.contains("РОССИ")
+            }
+
             // Try 1: ipapi.co
             try {
                 val request = Request.Builder()
@@ -349,7 +336,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                 val lat = json.optDouble("latitude", Double.NaN)
                                 val lon = json.optDouble("longitude", Double.NaN)
                                 
-                                if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                if (isRussianCountry(country) && city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
                                     withContext(Dispatchers.Main) {
                                         userLatitude.value = lat
                                         userLongitude.value = lon
@@ -384,7 +371,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     val lat = json.optDouble("latitude", Double.NaN)
                                     val lon = json.optDouble("longitude", Double.NaN)
 
-                                    if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                    if (isRussianCountry(country) && city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
                                         withContext(Dispatchers.Main) {
                                             userLatitude.value = lat
                                             userLongitude.value = lon
@@ -420,7 +407,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                     val lat = json.optDouble("latitude", Double.NaN)
                                     val lon = json.optDouble("longitude", Double.NaN)
 
-                                    if (city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
+                                    if (isRussianCountry(country) && city.isNotEmpty() && !lat.isNaN() && !lon.isNaN()) {
                                         withContext(Dispatchers.Main) {
                                             userLatitude.value = lat
                                             userLongitude.value = lon

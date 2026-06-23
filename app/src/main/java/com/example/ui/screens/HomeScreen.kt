@@ -752,7 +752,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "Укажите ваш город или адрес, чтобы увидеть свободные столики в заведениях поблизости.",
+                        text = "Укажите ваш город, улицу и номер дома, чтобы интерактивный радар определил реальные заведения поблизости от вас.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -760,9 +760,9 @@ fun HomeScreen(
                     OutlinedTextField(
                         value = manualCityInput,
                         onValueChange = { manualCityInput = it },
-                        label = { Text("Название города (например Sochi, Москва)") },
+                        label = { Text("Город, улица, дом") },
                         singleLine = true,
-                        placeholder = { Text("Москва, Россия") },
+                        placeholder = { Text("Москва, Тверская улица, 10") },
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
                             if (manualCityInput.isNotEmpty()) {
@@ -845,11 +845,11 @@ fun HomeScreen(
                                     showLocationDialog = false
                                     android.widget.Toast.makeText(context, "Локация успешно обновлена!", android.widget.Toast.LENGTH_SHORT).show()
                                 } else {
-                                    android.widget.Toast.makeText(context, "Не удалось найти город. Попробуйте на латинице или точнее.", android.widget.Toast.LENGTH_LONG).show()
+                                    android.widget.Toast.makeText(context, "Не удалось найти указанный адрес. Пожалуйста, введите город, улицу и дом точнее.", android.widget.Toast.LENGTH_LONG).show()
                                 }
                             }
                         } else {
-                            android.widget.Toast.makeText(context, "Введите название города", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, "Пожалуйста, введите адрес (город, улицу и дом)", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     },
                     enabled = !isSearchingCity && manualCityInput.trim().isNotEmpty()
