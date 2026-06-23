@@ -72,9 +72,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     val restaurantsState: StateFlow<List<Restaurant>> = combine(
         repository.restaurants,
         searchQuery,
-        selectedCuisine,
         filterStateFlow
-    ) { list, query, cuisine, searchState ->
+    ) { list, query, searchState ->
         val lat = searchState.lat
         val lon = searchState.lon
         val radiusKm = searchState.radiusKm
@@ -110,9 +109,6 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                         it.address.contains(trimmedQuery, ignoreCase = true) ||
                         it.description.contains(trimmedQuery, ignoreCase = true)
             }
-        }
-        if (cuisine != null && cuisine != "Все") {
-            filtered = filtered.filter { it.cuisines.contains(cuisine, ignoreCase = true) }
         }
         var sortedResult = filtered
         if (avail) {
@@ -171,6 +167,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
     fun fetchRealNearbyRestaurants(lat: Double, lon: Double) {
         isLoadingRestaurants.value = true
         viewModelScope.launch {
+            val currentCityName = userLocationName.value.split(",").firstOrNull()?.trim() ?: "Москва"
             try {
                 val client = OkHttpClient()
                 val radiusM = searchRadiusKm.value * 1000
@@ -244,6 +241,7 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                         val rTables = (10..22).random()
                                         val avTables = (0..6).random()
                                         val img = imagePool[i % imagePool.size]
+                                        val itemCity = tags.optString("addr:city", "").ifEmpty { currentCityName }
 
                                         list.add(
                                             Restaurant(
@@ -261,7 +259,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                                                 imageUrl = img,
                                                 description = "Аутентичный уголок вкуса поблизости от вас с уютной атмосферой, высоким рейтингом и приветливым персоналом.",
                                                 loyaltyOffer = "Скидка по золотой карте и +50 кешбэк баллов за визит",
-                                                popularity = (82..98).random()
+                                                popularity = (82..98).random(),
+                                                city = itemCity
                                             )
                                         )
                                     }
@@ -281,7 +280,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                         val offsetLon = (idx - 3) * 0.005 - 0.003
                         r.copy(
                             latitude = lat + offsetLat,
-                            longitude = lon + offsetLon
+                            longitude = lon + offsetLon,
+                            city = currentCityName
                         )
                     }
                     repository.updateRestaurants(fallback)
@@ -294,7 +294,8 @@ class RestaurantViewModel(private val repository: RestaurantRepository) : ViewMo
                         val offsetLon = (idx - 3) * 0.005 - 0.003
                         r.copy(
                             latitude = lat + offsetLat,
-                            longitude = lon + offsetLon
+                            longitude = lon + offsetLon,
+                            city = currentCityName
                         )
                     }
                     repository.updateRestaurants(fallback)

@@ -19,6 +19,19 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
       }
+      @keyframes fadeInSlideUp {
+        0% {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .fade-in-slide-up {
+        animation: fadeInSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
     </style>
   </head>
   <body class="bg-[#FEF7FF] text-[#1D1B20] font-sans h-full flex flex-col justify-between overflow-hidden">
@@ -212,6 +225,7 @@
       let currentScreen = "home";
       let searchKeyword = "";
       let activeFilter = "all";
+      let currentCityNameWeb = "Москва";
       let selectedRestaurant = null;
       let userPoints = parseInt(localStorage.getItem("loyalty_points") || "1240");
       let reservations = JSON.parse(localStorage.getItem("reservations") || "[]");
@@ -356,14 +370,6 @@
             <span class="material-symbols-outlined absolute left-4 text-[#49454F]">search</span>
             <input type="text" placeholder="Поиск ресторанов, блюд..." value="${searchKeyword}" oninput="searchRestaurant(this.value)" class="w-full bg-[#F3EDF7] border-0 text-[#1D1B20] text-sm py-3.5 pl-12 pr-4 rounded-full focus:outline-none focus:ring-2 focus:ring-[#6750A4]" />
           </div>
-          <!-- Category Chips -->
-          <div class="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar">
-            <button onclick="filterCategory('all')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'all' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Все</button>
-            <button onclick="filterCategory('Italian')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Italian' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Итальянская</button>
-            <button onclick="filterCategory('Asian')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Asian' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Азиатская</button>
-            <button onclick="filterCategory('French')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'French' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Французская</button>
-            <button onclick="filterCategory('Grill')" class="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${activeFilter === 'Grill' ? 'bg-[#EADDFF] text-[#21005D]' : 'border border-[#CAC4D0] text-[#49454F]' }">Гриль</button>
-          </div>
           <!-- Radius Selector -->
           <div class="flex flex-col gap-1.5 mt-1">
             <div class="flex justify-between items-center text-[10px] text-[#49454F] font-bold uppercase tracking-wider">
@@ -486,7 +492,7 @@
         } else {
           filtered.forEach(res => {
             const card = document.createElement("div");
-            card.className = "bg-[#F3EDF7] p-4 rounded-3xl flex flex-col justify-between border border-[#D0BCFF] gap-3";
+            card.className = "bg-[#F3EDF7] p-4 rounded-3xl flex flex-col justify-between border border-[#D0BCFF] gap-3 fade-in-slide-up";
             card.innerHTML = `
               <div class="flex justify-between items-start">
                 <div class="flex-1">
@@ -503,6 +509,7 @@
                   </div>
                   <h3 class="text-lg font-bold tracking-tight text-[#1D1B20]">${res.name}</h3>
                   <p class="text-xs text-[#49454F] mt-0.5">${res.cuisine} кулинария • ${res.rating} ★ (${res.reviews} отзывов)</p>
+                  <p class="text-[11px] text-[#49454F] mt-1.5 flex items-center gap-1 font-medium"><span class="material-symbols-outlined text-[13px]">location_on</span> ${res.city || currentCityNameWeb}, ${res.address}</p>
                 </div>
                 <div class="bg-white px-2.5 py-1.5 rounded-xl border border-[#CAC4D0] text-center min-w-[55px]">
                   <div class="text-[11px] font-bold">${res.distance}</div>
@@ -1329,6 +1336,7 @@
                   tags: tagNames,
                   lat: elemLat,
                   lon: elemLon,
+                  city: elem.tags["addr:city"] || currentCityNameWeb,
                   address: elem.tags["addr:street"] ? `ул. ${elem.tags["addr:street"]}, ${elem.tags["addr:housenumber"] || ""}` : "В районе вашей геолокации"
                 });
               }
@@ -1399,6 +1407,7 @@
             lat: resLat,
             lon: resLon,
             isGoogleSaved: isGoogleSaved,
+            city: currentCityNameWeb,
             address: "В районе вашего местоположения",
             description: item.desc
           });
@@ -1406,6 +1415,7 @@
       }
 
       function updateLocationDisplay(city, country) {
+        currentCityNameWeb = city;
         const el = document.getElementById("user-location-text");
         if (el) {
           el.innerHTML = `${city}, ${country} <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span>`;

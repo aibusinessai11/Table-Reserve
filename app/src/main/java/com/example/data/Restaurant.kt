@@ -19,7 +19,8 @@ data class Restaurant(
     val imageUrl: String,
     val description: String,
     val loyaltyOffer: String,
-    val popularity: Int
+    val popularity: Int,
+    val city: String = "Москва"
 ) {
     companion object {
         fun getMockRestaurants(): List<Restaurant> {

@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -45,7 +46,6 @@ fun HomeScreen(
 ) {
     val restaurants by viewModel.restaurantsState.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    val selectedCuisine by viewModel.selectedCuisine.collectAsState()
     val onlyAvailable by viewModel.onlyAvailable.collectAsState()
     val userLocationName by viewModel.userLocationName.collectAsState()
     val isLoading by viewModel.isLoadingRestaurants.collectAsState()
@@ -59,8 +59,6 @@ fun HomeScreen(
     val googleUserEmail by viewModel.googleUserEmail.collectAsState()
     val googleUserName by viewModel.googleUserName.collectAsState()
     val googleProfilePic by viewModel.googleProfilePic.collectAsState()
-
-    val cuisinesList = listOf("Все", "Итальянская", "Паназиатская", "Французская", "Веганская", "Американская", "Кето")
 
     Scaffold(
         topBar = {
@@ -190,26 +188,6 @@ fun HomeScreen(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     )
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Cuisine filters
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(cuisinesList) { cuisine ->
-                        val isSelected = if (cuisine == "Все") selectedCuisine == null else selectedCuisine == cuisine
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = {
-                                viewModel.selectedCuisine.value = if (cuisine == "Все") null else cuisine
-                            },
-                            label = { Text(cuisine) },
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                    }
-                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
@@ -517,23 +495,31 @@ fun HomeScreen(
                     }
                 }
             } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
+                AnimatedVisibility(
+                    visible = !isLoading && restaurants.isNotEmpty(),
+                    enter = fadeIn(animationSpec = tween(500)) + slideInVertically(
+                        initialOffsetY = { 30 },
+                        animationSpec = tween(500)
+                    )
                 ) {
-                    items(restaurants, key = { it.id }) { restaurant ->
-                        RestaurantCard(
-                            restaurant = restaurant,
-                            onClick = {
-                                viewModel.selectRestaurant(restaurant)
-                                onNavigateToDetail()
-                            },
-                            onNavigateClick = {
-                                viewModel.selectRestaurant(restaurant)
-                                onNavigateToRoute()
-                            }
-                        )
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(restaurants, key = { it.id }) { restaurant ->
+                            RestaurantCard(
+                                restaurant = restaurant,
+                                onClick = {
+                                    viewModel.selectRestaurant(restaurant)
+                                    onNavigateToDetail()
+                                },
+                                onNavigateClick = {
+                                    viewModel.selectRestaurant(restaurant)
+                                    onNavigateToRoute()
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -894,7 +880,7 @@ fun RestaurantCard(
                 )
 
                 Text(
-                    text = restaurant.address,
+                    text = "${restaurant.city}, ${restaurant.address}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
