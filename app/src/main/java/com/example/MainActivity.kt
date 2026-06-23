@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun checkLocationPermissions() {
+    fun checkLocationPermissions() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             setupLocationListener()
@@ -65,6 +65,19 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             ))
         }
+    }
+
+    fun requestGPSLocation() {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        val isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val isNetworkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        
+        if (!isGpsEnabled && !isNetworkEnabled) {
+            android.widget.Toast.makeText(this, "Пожалуйста, включите GPS / Геолокацию в настройках вашего устройства", android.widget.Toast.LENGTH_LONG).show()
+        } else {
+            android.widget.Toast.makeText(this, "Запрос GPS координат...", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        checkLocationPermissions()
     }
 
     private fun setupLocationListener() {
@@ -92,10 +105,12 @@ class MainActivity : ComponentActivity() {
                 override fun onProviderDisabled(provider: String) {}
             }
             
+            // Request updates from both providers securely if they are active
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 1f, listener)
+            }
             if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000L, 10f, listener)
-            } else if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000L, 10f, listener)
+                locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000L, 1f, listener)
             }
         } catch (e: SecurityException) {
             e.printStackTrace()

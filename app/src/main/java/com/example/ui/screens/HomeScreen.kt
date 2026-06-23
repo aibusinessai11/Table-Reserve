@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.MainActivity
 import com.example.data.Restaurant
 import com.example.ui.viewmodel.RestaurantViewModel
 
@@ -686,25 +687,55 @@ fun HomeScreen(
                         )
                     }
                     
-                    Button(
-                        onClick = {
-                            viewModel.fetchGeoLocationByIp()
-                            showLocationDialog = false
-                            android.widget.Toast.makeText(context, "Определяем по IP...", android.widget.Toast.LENGTH_SHORT).show()
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                        ),
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Определить автоматически", style = MaterialTheme.typography.labelLarge)
+                        Button(
+                            onClick = {
+                                val activity = context as? MainActivity
+                                if (activity != null) {
+                                    activity.requestGPSLocation()
+                                } else {
+                                    viewModel.fetchGeoLocationByIp()
+                                }
+                                showLocationDialog = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("По GPS", style = MaterialTheme.typography.labelLarge)
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.fetchGeoLocationByIp()
+                                showLocationDialog = false
+                                android.widget.Toast.makeText(context, "Определяем по IP...", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("По IP", style = MaterialTheme.typography.labelLarge)
+                        }
                     }
                 }
             },
